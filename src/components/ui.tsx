@@ -5,7 +5,7 @@ export function PageTitle({ title, subtitle, action }: { title: string; subtitle
     <div className="mb-4 flex items-end justify-between gap-3">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-        {subtitle && <p className="mt-0.5 text-sm text-muted">{subtitle}</p>}
+        {subtitle && <p className="mt-0.5 text-sm text-muted first-letter:uppercase">{subtitle}</p>}
       </div>
       {action}
     </div>
@@ -54,7 +54,7 @@ export function Badge({ tone = "neutral", children }: { tone?: Tone; children: R
 
 export function Skeleton({ rows = 3 }: { rows?: number }) {
   return (
-    <div className="space-y-3" aria-busy="true" aria-label="Loading">
+    <div className="space-y-3" aria-busy="true">
       <div className="h-7 w-40 animate-pulse rounded-lg bg-surface-2" />
       {Array.from({ length: rows }, (_, i) => (
         <div key={i} className="h-20 animate-pulse rounded-2xl bg-surface-2" />

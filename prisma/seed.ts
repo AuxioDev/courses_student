@@ -8,11 +8,13 @@ import { PrismaClient } from "../src/generated/prisma/client";
 import { addDays, dayKey, startOfDay, weekday } from "../src/lib/dates";
 
 const db = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) });
-const TZ = "Asia/Baku";
+const TZ = "Asia/Baku"; // also the schema default for new users
 const PASSWORD = "password123";
 
 async function wipe() {
   await db.$transaction([
+    db.loginAttempt.deleteMany(),
+    db.authToken.deleteMany(),
     db.notification.deleteMany(),
     db.studentTodo.deleteMany(),
     db.studentNote.deleteMany(),
@@ -51,7 +53,10 @@ async function main() {
   const tural = await user("Tural Aliyev", "tural@example.com", "teacher");
   const students = await Promise.all([
     user("Aysel Huseynova", "student@example.com", "student"),
-    user("Murad Karimov", "murad@example.com", "student"),
+    // Murad tests the first-login flow: he must choose his own password.
+    user("Murad Karimov", "murad@example.com", "student").then((u) =>
+      db.user.update({ where: { id: u.id }, data: { mustChangePassword: true } }),
+    ),
     user("Nigar Rzayeva", "nigar@example.com", "student"),
   ]);
   const me = students[0];

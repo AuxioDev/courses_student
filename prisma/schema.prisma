@@ -49,6 +49,10 @@ enum MarkType {
   homework
 }
 
+enum AuthTokenType {
+  reset
+}
+
 enum NotificationType {
   new_homework
   deadline
@@ -58,14 +62,17 @@ enum NotificationType {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  name         String
-  email        String   @unique
-  passwordHash String   @map("password_hash")
-  role         Role
-  timezone     String   @default("UTC")
-  active       Boolean  @default(true)
-  createdAt    DateTime @default(now()) @map("created_at")
+  id                 String   @id @default(cuid())
+  name               String
+  email              String   @unique
+  passwordHash       String   @map("password_hash")
+  role               Role
+  timezone           String   @default("Asia/Baku")
+  locale             String? // "az" | "en" | "ru"; null until the user picks or first logs in
+  active             Boolean  @default(true)
+  sessionVersion     Int      @default(0) @map("session_version") // bump to sign out every device
+  mustChangePassword Boolean  @default(false) @map("must_change_password") // set with a temporary password
+  createdAt          DateTime @default(now()) @map("created_at")
 
   teachingGroups Group[]        @relation("GroupTeacher")
   taughtLessons  Lesson[]       @relation("LessonTeacher")
@@ -79,6 +86,7 @@ model User {
   notes          StudentNote[]
   todos          StudentTodo[]
   notifications  Notification[]
+  authTokens     AuthToken[]
 
   @@map("users")
 }
@@ -321,4 +329,32 @@ model Notification {
 
   @@index([userId, readAt])
   @@map("notifications")
+}
+
+// One-time links (password reset). Only the SHA-256 of the token is stored.
+model AuthToken {
+  id        String        @id @default(cuid())
+  userId    String        @map("user_id")
+  type      AuthTokenType
+  tokenHash String        @unique @map("token_hash")
+  expiresAt DateTime      @map("expires_at")
+  usedAt    DateTime?     @map("used_at")
+  createdAt DateTime      @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("auth_tokens")
+}
+
+// Used to limit password guessing. Rows older than a day are deleted on login.
+model LoginAttempt {
+  id        String   @id @default(cuid())
+  email     String
+  ip        String
+  success   Boolean
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([email, createdAt])
+  @@index([ip, createdAt])
+  @@map("login_attempts")
 }

@@ -1,5 +1,9 @@
 // Date helpers that work in the student's own timezone.
 
+import { intlLocale, type Locale } from "@/i18n/config";
+import type { Dictionary } from "@/i18n/dictionaries/en";
+import { fmt } from "@/i18n/format";
+
 export type DayKey = string; // "YYYY-MM-DD"
 
 function parts(date: Date, timeZone: string) {
@@ -80,19 +84,20 @@ export function formatTime(date: Date, timeZone: string) {
   return new Intl.DateTimeFormat("en-GB", { timeZone, hour: "2-digit", minute: "2-digit" }).format(date);
 }
 
-export function formatDateTime(date: Date, timeZone: string) {
-  return new Intl.DateTimeFormat("en-GB", {
+export function formatDateTime(date: Date, timeZone: string, locale: Locale) {
+  return new Intl.DateTimeFormat(intlLocale[locale], {
     timeZone,
     weekday: "short",
     day: "numeric",
     month: "short",
     hour: "2-digit",
     minute: "2-digit",
+    hourCycle: "h23",
   }).format(date);
 }
 
-export function formatDayKey(key: DayKey, options: Intl.DateTimeFormatOptions = {}) {
-  return new Intl.DateTimeFormat("en-GB", {
+export function formatDayKey(key: DayKey, locale: Locale, options: Intl.DateTimeFormatOptions = {}) {
+  return new Intl.DateTimeFormat(intlLocale[locale], {
     timeZone: "UTC",
     weekday: "long",
     day: "numeric",
@@ -101,14 +106,24 @@ export function formatDayKey(key: DayKey, options: Intl.DateTimeFormatOptions = 
   }).format(new Date(`${key}T00:00:00Z`));
 }
 
-export function relativeDue(due: Date, now: Date) {
+// Short weekday names, Monday first.
+export function weekdayNames(locale: Locale) {
+  const monday = new Date(Date.UTC(2024, 0, 1));
+  return Array.from({ length: 7 }, (_, i) =>
+    new Intl.DateTimeFormat(intlLocale[locale], { timeZone: "UTC", weekday: "short" }).format(
+      new Date(monday.getTime() + i * 864e5),
+    ),
+  );
+}
+
+export function relativeDue(due: Date, now: Date, t: Dictionary["homework"]["dueRelative"]) {
   const diffMs = due.getTime() - now.getTime();
   const hours = Math.round(diffMs / 36e5);
   if (diffMs < 0) {
     const ago = Math.abs(hours);
-    return ago < 24 ? `${ago}h overdue` : `${Math.round(ago / 24)}d overdue`;
+    return ago < 24 ? fmt(t.overdueHours, { n: ago }) : fmt(t.overdueDays, { n: Math.round(ago / 24) });
   }
-  if (hours < 1) return "due within the hour";
-  if (hours < 24) return `due in ${hours}h`;
-  return `due in ${Math.round(hours / 24)}d`;
+  if (hours < 1) return t.withinHour;
+  if (hours < 24) return fmt(t.inHours, { n: hours });
+  return fmt(t.inDays, { n: Math.round(hours / 24) });
 }

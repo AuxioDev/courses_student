@@ -1,0 +1,30 @@
+// Shared setup for the admin scripts. These stand in for the Admin Panel during the pilot.
+import "dotenv/config";
+import { createHash, randomBytes } from "node:crypto";
+import bcrypt from "bcryptjs";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient } from "../src/generated/prisma/client";
+
+export const db = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) });
+export const APP_URL = (process.env.APP_URL ?? "http://localhost:3000").replace(/\/$/, "");
+
+export async function findStudent(email: string | undefined) {
+  if (!email) throw new Error("Pass the student's email, e.g. npm run auth:reset-link -- student@example.com");
+  const user = await db.user.findUnique({ where: { email: email.toLowerCase().trim() } });
+  if (!user) throw new Error(`No user with email ${email}`);
+  if (user.role !== "student") throw new Error(`${email} is a ${user.role}, not a student`);
+  return user;
+}
+
+export const sha256 = (value: string) => createHash("sha256").update(value).digest("hex");
+export const randomToken = () => randomBytes(32).toString("base64url");
+export const hash = (password: string) => bcrypt.hash(password, 10);
+
+export function run(main: () => Promise<void>) {
+  main()
+    .catch((e: Error) => {
+      console.error(e.message);
+      process.exitCode = 1;
+    })
+    .finally(() => db.$disconnect());
+}

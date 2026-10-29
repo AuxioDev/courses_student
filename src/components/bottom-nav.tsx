@@ -3,56 +3,63 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { localePath, type Locale } from "@/i18n/config";
 import { BookIcon, MenuIcon, StarIcon, SunIcon, TaskIcon } from "./icons";
 
+export type NavLabels = { today: string; diary: string; homework: string; marks: string; more: string; main: string };
+
 const tabs = [
-  { href: "/", label: "Today", Icon: SunIcon, match: (p: string) => p === "/" },
-  { href: "/diary", label: "Diary", Icon: BookIcon, match: (p: string) => p.startsWith("/diary") },
-  { href: "/homework", label: "Homework", Icon: TaskIcon, match: (p: string) => p.startsWith("/homework") },
-  { href: "/marks", label: "Marks", Icon: StarIcon, match: (p: string) => p.startsWith("/marks") },
+  { path: "/", key: "today", Icon: SunIcon, match: (p: string) => p === "/" },
+  { path: "/diary", key: "diary", Icon: BookIcon, match: (p: string) => p.startsWith("/diary") },
+  { path: "/homework", key: "homework", Icon: TaskIcon, match: (p: string) => p.startsWith("/homework") },
+  { path: "/marks", key: "marks", Icon: StarIcon, match: (p: string) => p.startsWith("/marks") },
   {
-    href: "/more",
-    label: "More",
+    path: "/more",
+    key: "more",
     Icon: MenuIcon,
     match: (p: string) =>
       ["/more", "/schedule", "/attendance", "/notes", "/notifications", "/profile"].some((r) => p.startsWith(r)),
   },
-];
+] as const;
+
+type Props = { locale: Locale; labels: NavLabels };
 
 // The path is only known at request time on dynamic routes, so the static shell
 // renders the bar without an active tab and the highlight streams in.
-export function BottomNav() {
+export function BottomNav(props: Props) {
   return (
-    <Suspense fallback={<NavBar pathname={null} />}>
-      <ActiveNavBar />
+    <Suspense fallback={<NavBar {...props} pathname={null} />}>
+      <ActiveNavBar {...props} />
     </Suspense>
   );
 }
 
-function ActiveNavBar() {
-  return <NavBar pathname={usePathname()} />;
+function ActiveNavBar(props: Props) {
+  // Strip the /az, /en or /ru prefix before matching.
+  const path = usePathname().replace(/^\/[^/]+/, "") || "/";
+  return <NavBar {...props} pathname={path} />;
 }
 
-function NavBar({ pathname }: { pathname: string | null }) {
+function NavBar({ locale, labels, pathname }: Props & { pathname: string | null }) {
   return (
     <nav
-      aria-label="Main"
+      aria-label={labels.main}
       className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur"
     >
       <ul className="mx-auto grid max-w-xl grid-cols-5">
-        {tabs.map(({ href, label, Icon, match }) => {
+        {tabs.map(({ path, key, Icon, match }) => {
           const active = pathname !== null && match(pathname);
           return (
-            <li key={href}>
+            <li key={path}>
               <Link
-                href={href}
+                href={localePath(locale, path)}
                 aria-current={active ? "page" : undefined}
                 className={`flex flex-col items-center gap-0.5 py-2 text-[11px] font-medium ${
                   active ? "text-accent" : "text-muted"
                 }`}
               >
                 <Icon strokeWidth={active ? 2.2 : 1.8} />
-                {label}
+                <span className="max-w-full truncate px-0.5">{labels[key]}</span>
               </Link>
             </li>
           );

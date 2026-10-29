@@ -1,14 +1,16 @@
 import Link from "next/link";
 import { getUnreadNotificationCount } from "@/lib/data";
+import { fmt, getI18n } from "@/i18n";
+import { localePath } from "@/i18n/config";
 import { BellIcon } from "./icons";
 
 export async function NotificationBell() {
-  const unread = await getUnreadNotificationCount();
+  const [{ locale, t }, unread] = await Promise.all([getI18n(), getUnreadNotificationCount()]);
   return (
     <Link
-      href="/notifications"
+      href={localePath(locale, "/notifications")}
       className="relative rounded-full p-2 text-ink"
-      aria-label={unread ? `Notifications, ${unread} unread` : "Notifications"}
+      aria-label={unread ? fmt(t.header.unread, { n: unread }) : t.header.notifications}
     >
       <BellIcon />
       {unread > 0 && (

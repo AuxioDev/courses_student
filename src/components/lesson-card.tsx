@@ -1,14 +1,17 @@
 import Link from "next/link";
 import type { LessonWithDetails } from "@/lib/data";
 import { formatTime } from "@/lib/dates";
-import { attendanceLabel, lessonStatusLabel } from "./status";
+import { fmt, getI18n } from "@/i18n";
+import { localePath } from "@/i18n/config";
+import { attendanceTone, lessonStatusTone } from "./status";
 import { Badge } from "./ui";
 import { VideoIcon } from "./icons";
 
 const JOIN_WINDOW_MS = 15 * 60 * 1000;
 
-export function LessonCard({ lesson, timeZone, now }: { lesson: LessonWithDetails; timeZone: string; now: Date }) {
-  const status = lessonStatusLabel[lesson.status];
+export async function LessonCard({ lesson, timeZone, now }: { lesson: LessonWithDetails; timeZone: string; now: Date }) {
+  const { locale, t } = await getI18n();
+  const statusTone = lessonStatusTone[lesson.status];
   const attendance = lesson.attendance[0];
   const cancelled = lesson.status === "cancelled";
   const live =
@@ -26,10 +29,10 @@ export function LessonCard({ lesson, timeZone, now }: { lesson: LessonWithDetail
       <div className="min-w-0 flex-1 border-l border-line pl-3">
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="font-semibold">{lesson.group.course.title}</span>
-          {status && <Badge tone={status.tone}>{status.label}</Badge>}
-          {attendance && (
-            <Badge tone={attendanceLabel[attendance.status].tone}>{attendanceLabel[attendance.status].label}</Badge>
+          {statusTone && (lesson.status === "moved" || lesson.status === "cancelled") && (
+            <Badge tone={statusTone}>{t.lesson.status[lesson.status]}</Badge>
           )}
+          {attendance && <Badge tone={attendanceTone[attendance.status]}>{t.attendance.status[attendance.status]}</Badge>}
         </div>
         {lesson.topic && <p className="mt-0.5 text-sm">{lesson.topic}</p>}
         <p className="mt-0.5 text-xs text-muted">
@@ -40,8 +43,8 @@ export function LessonCard({ lesson, timeZone, now }: { lesson: LessonWithDetail
           <ul className="mt-2 space-y-1">
             {lesson.homework.map((hw) => (
               <li key={hw.id}>
-                <Link href={`/homework/${hw.id}`} className="text-sm font-medium text-accent">
-                  Homework: {hw.title} →
+                <Link href={localePath(locale, `/homework/${hw.id}`)} className="text-sm font-medium text-accent">
+                  {fmt(t.lesson.homework, { title: hw.title })}
                 </Link>
               </li>
             ))}
@@ -49,7 +52,7 @@ export function LessonCard({ lesson, timeZone, now }: { lesson: LessonWithDetail
         )}
         {live && (
           <a href={lesson.meetingUrl!} target="_blank" rel="noreferrer" className="btn mt-3">
-            <VideoIcon width={18} height={18} /> Join lesson
+            <VideoIcon width={18} height={18} /> {t.lesson.join}
           </a>
         )}
       </div>
