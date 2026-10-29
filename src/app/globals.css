@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+/* Diary palette: warm paper with ink-blue accents. */
+:root {
+  --bg: #f7f4ee;
+  --surface: #ffffff;
+  --surface-2: #f1ede4;
+  --ink: #1d232f;
+  --muted: #6b7280;
+  --line: #e4ded2;
+  --accent: #2f4fb5;
+  --accent-ink: #ffffff;
+  --accent-soft: #e5eafb;
+  --good: #1f7a4d;
+  --good-soft: #e1f3e9;
+  --warn: #a35d00;
+  --warn-soft: #fbefd9;
+  --bad: #b42335;
+  --bad-soft: #fbe3e6;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14161b;
+    --surface: #1c1f26;
+    --surface-2: #23272f;
+    --ink: #e9e6df;
+    --muted: #9aa0ab;
+    --line: #2e323b;
+    --accent: #8ea6ff;
+    --accent-ink: #10131a;
+    --accent-soft: #252d47;
+    --good: #6fd29e;
+    --good-soft: #1b3027;
+    --warn: #f0b65a;
+    --warn-soft: #362b17;
+    --bad: #ff8a98;
+    --bad-soft: #3a1f24;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-good: var(--good);
+  --color-good-soft: var(--good-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-bad: var(--bad);
+  --color-bad-soft: var(--bad-soft);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.field {
+  @apply w-full rounded-xl border border-line bg-surface px-3 py-2.5 text-[15px] outline-none placeholder:text-muted focus:border-accent;
+}
+
+.btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-accent-ink transition active:scale-[0.98] disabled:opacity-60;
+}
+
+.btn-ghost {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl border border-line bg-surface px-3 py-2 text-sm font-medium text-ink transition active:scale-[0.98];
+}

@@ -1,0 +1,324 @@
+// Shared data model for the Online Courses System (admin, teacher, student).
+// Keep this file identical across all three apps until it moves into a shared package.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  admin
+  teacher
+  student
+}
+
+enum EnrollmentStatus {
+  active
+  dropped
+}
+
+enum LessonStatus {
+  scheduled
+  moved
+  cancelled
+  done
+}
+
+enum AttendanceStatus {
+  present
+  late
+  absent
+  excused
+}
+
+enum SubmissionStatus {
+  submitted
+  late
+  graded
+  returned
+}
+
+enum MarkType {
+  classwork
+  quiz
+  exam
+  homework
+}
+
+enum NotificationType {
+  new_homework
+  deadline
+  new_mark
+  lesson_changed
+  homework_returned
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         Role
+  timezone     String   @default("UTC")
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  teachingGroups Group[]        @relation("GroupTeacher")
+  taughtLessons  Lesson[]       @relation("LessonTeacher")
+  enrollments    Enrollment[]
+  attendance     Attendance[]
+  submissions    Submission[]
+  marks          Mark[]         @relation("MarkStudent")
+  marksGiven     Mark[]         @relation("MarkCreator")
+  markChanges    MarkHistory[]
+  finalGrades    FinalGrade[]
+  notes          StudentNote[]
+  todos          StudentTodo[]
+  notifications  Notification[]
+
+  @@map("users")
+}
+
+model Course {
+  id           String  @id @default(cuid())
+  title        String
+  description  String?
+  gradingScale String  @default("0-100") @map("grading_scale")
+  archived     Boolean @default(false)
+
+  groups Group[]
+
+  @@map("courses")
+}
+
+model Term {
+  id        String   @id @default(cuid())
+  name      String
+  startDate DateTime @map("start_date") @db.Date
+  endDate   DateTime @map("end_date") @db.Date
+  locked    Boolean  @default(false)
+
+  groups      Group[]
+  finalGrades FinalGrade[]
+
+  @@map("terms")
+}
+
+model Group {
+  id        String @id @default(cuid())
+  courseId  String @map("course_id")
+  teacherId String @map("teacher_id")
+  termId    String @map("term_id")
+  name      String
+
+  course        Course         @relation(fields: [courseId], references: [id])
+  teacher       User           @relation("GroupTeacher", fields: [teacherId], references: [id])
+  term          Term           @relation(fields: [termId], references: [id])
+  enrollments   Enrollment[]
+  scheduleRules ScheduleRule[]
+  lessons       Lesson[]
+  homework      Homework[]
+  marks         Mark[]
+  finalGrades   FinalGrade[]
+
+  @@map("groups")
+}
+
+model Enrollment {
+  id        String           @id @default(cuid())
+  groupId   String           @map("group_id")
+  studentId String           @map("student_id")
+  status    EnrollmentStatus @default(active)
+
+  group   Group @relation(fields: [groupId], references: [id])
+  student User  @relation(fields: [studentId], references: [id])
+
+  @@unique([groupId, studentId])
+  @@map("enrollments")
+}
+
+model ScheduleRule {
+  id        String @id @default(cuid())
+  groupId   String @map("group_id")
+  weekday   Int // 0 = Sunday ... 6 = Saturday
+  startTime String @map("start_time") // "18:00"
+  endTime   String @map("end_time") // "19:30"
+
+  group Group @relation(fields: [groupId], references: [id])
+
+  @@map("schedule_rules")
+}
+
+model Lesson {
+  id         String       @id @default(cuid())
+  groupId    String       @map("group_id")
+  teacherId  String       @map("teacher_id")
+  startsAt   DateTime     @map("starts_at")
+  endsAt     DateTime     @map("ends_at")
+  topic      String?
+  meetingUrl String?      @map("meeting_url")
+  materials  String?
+  status     LessonStatus @default(scheduled)
+
+  group      Group         @relation(fields: [groupId], references: [id])
+  teacher    User          @relation("LessonTeacher", fields: [teacherId], references: [id])
+  attendance Attendance[]
+  homework   Homework[]
+  marks      Mark[]
+  notes      StudentNote[]
+
+  @@index([groupId, startsAt])
+  @@map("lessons")
+}
+
+model Attendance {
+  id        String           @id @default(cuid())
+  lessonId  String           @map("lesson_id")
+  studentId String           @map("student_id")
+  status    AttendanceStatus
+  note      String?
+
+  lesson  Lesson @relation(fields: [lessonId], references: [id])
+  student User   @relation(fields: [studentId], references: [id])
+
+  @@unique([lessonId, studentId])
+  @@map("attendance")
+}
+
+model Homework {
+  id          String   @id @default(cuid())
+  lessonId    String?  @map("lesson_id")
+  groupId     String   @map("group_id")
+  title       String
+  description String?
+  attachments String[]
+  dueAt       DateTime @map("due_at")
+  maxScore    Int      @default(100) @map("max_score")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  lesson      Lesson?      @relation(fields: [lessonId], references: [id])
+  group       Group        @relation(fields: [groupId], references: [id])
+  submissions Submission[]
+  marks       Mark[]
+
+  @@index([groupId, dueAt])
+  @@map("homework")
+}
+
+model Submission {
+  id          String           @id @default(cuid())
+  homeworkId  String           @map("homework_id")
+  studentId   String           @map("student_id")
+  content     String?
+  files       String[]
+  submittedAt DateTime         @default(now()) @map("submitted_at")
+  status      SubmissionStatus @default(submitted)
+  score       Int?
+  feedback    String?
+
+  homework Homework @relation(fields: [homeworkId], references: [id])
+  student  User     @relation(fields: [studentId], references: [id])
+
+  @@unique([homeworkId, studentId])
+  @@map("submissions")
+}
+
+model Mark {
+  id         String   @id @default(cuid())
+  studentId  String   @map("student_id")
+  groupId    String   @map("group_id")
+  lessonId   String?  @map("lesson_id")
+  homeworkId String?  @map("homework_id")
+  type       MarkType
+  value      Float
+  weight     Float    @default(1)
+  comment    String?
+  createdBy  String   @map("created_by")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  student  User          @relation("MarkStudent", fields: [studentId], references: [id])
+  group    Group         @relation(fields: [groupId], references: [id])
+  lesson   Lesson?       @relation(fields: [lessonId], references: [id])
+  homework Homework?     @relation(fields: [homeworkId], references: [id])
+  creator  User          @relation("MarkCreator", fields: [createdBy], references: [id])
+  history  MarkHistory[]
+
+  @@index([studentId, groupId])
+  @@map("marks")
+}
+
+model MarkHistory {
+  id        String   @id @default(cuid())
+  markId    String   @map("mark_id")
+  oldValue  Float    @map("old_value")
+  newValue  Float    @map("new_value")
+  changedBy String   @map("changed_by")
+  changedAt DateTime @default(now()) @map("changed_at")
+
+  mark          Mark @relation(fields: [markId], references: [id])
+  changedByUser User @relation(fields: [changedBy], references: [id])
+
+  @@map("mark_history")
+}
+
+model FinalGrade {
+  id        String  @id @default(cuid())
+  studentId String  @map("student_id")
+  groupId   String  @map("group_id")
+  termId    String  @map("term_id")
+  value     Float
+  published Boolean @default(false)
+
+  student User  @relation(fields: [studentId], references: [id])
+  group   Group @relation(fields: [groupId], references: [id])
+  term    Term  @relation(fields: [termId], references: [id])
+
+  @@unique([studentId, groupId, termId])
+  @@map("final_grades")
+}
+
+model StudentNote {
+  id        String   @id @default(cuid())
+  studentId String   @map("student_id")
+  date      DateTime @db.Date
+  lessonId  String?  @map("lesson_id")
+  text      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  student User    @relation(fields: [studentId], references: [id])
+  lesson  Lesson? @relation(fields: [lessonId], references: [id])
+
+  @@index([studentId, date])
+  @@map("student_notes")
+}
+
+model StudentTodo {
+  id        String    @id @default(cuid())
+  studentId String    @map("student_id")
+  title     String
+  dueAt     DateTime? @map("due_at")
+  done      Boolean   @default(false)
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  student User @relation(fields: [studentId], references: [id])
+
+  @@map("student_todos")
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String           @map("user_id")
+  type      NotificationType
+  payload   Json
+  readAt    DateTime?        @map("read_at")
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, readAt])
+  @@map("notifications")
+}
