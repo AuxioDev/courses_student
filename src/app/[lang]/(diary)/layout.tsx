@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getI18n } from "@/i18n";
 import { localePath } from "@/i18n/config";
 import { BottomNav } from "@/components/bottom-nav";
+import { OfflineBanner } from "@/components/pwa/offline-banner";
 import { NotificationBell, NotificationBellPlaceholder } from "@/components/notification-bell";
 
 export default async function DiaryLayout({ children }: LayoutProps<"/[lang]">) {
@@ -19,7 +20,10 @@ export default async function DiaryLayout({ children }: LayoutProps<"/[lang]">) 
           </Suspense>
         </div>
       </header>
-      <main className="mx-auto max-w-xl px-4 pt-5">{children}</main>
+      <main className="mx-auto max-w-xl px-4 pt-5">
+        <OfflineBanner text={t.pwa.offline} />
+        {children}
+      </main>
       <BottomNav locale={locale} labels={t.nav} />
     </div>
   );

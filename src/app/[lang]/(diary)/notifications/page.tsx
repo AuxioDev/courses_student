@@ -1,26 +1,17 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import type { Metadata } from "next";
-import type { NotificationType } from "@/generated/prisma/enums";
 import { getCurrentStudent } from "@/lib/auth";
 import { getNotifications } from "@/lib/data";
 import { formatDateTime } from "@/lib/dates";
 import { getI18n } from "@/i18n";
-import { localePath, type Locale } from "@/i18n/config";
+import { notificationHref, renderNotification } from "@/lib/notifications/types";
 import { Empty, PageTitle, Skeleton } from "@/components/ui";
 import { markAllNotificationsRead } from "@/app/actions";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getI18n();
   return { title: t.notifications.title };
-}
-
-type Payload = { title?: string; body?: string; homeworkId?: string; date?: string };
-
-function linkFor(locale: Locale, payload: Payload) {
-  if (payload.homeworkId) return localePath(locale, `/homework/${payload.homeworkId}`);
-  if (payload.date) return localePath(locale, `/diary?date=${payload.date}`);
-  return null;
 }
 
 export default function NotificationsPage() {
@@ -33,7 +24,6 @@ export default function NotificationsPage() {
 
 async function Notifications() {
   const [{ locale, t }, student, items] = await Promise.all([getI18n(), getCurrentStudent(), getNotifications()]);
-  const typeLabel: Record<NotificationType, string> = t.notifications.type;
   const unread = items.some((n) => !n.readAt);
 
   return (
@@ -55,8 +45,8 @@ async function Notifications() {
       ) : (
         <ul className="overflow-hidden rounded-2xl border border-line bg-surface">
           {items.map((n) => {
-            const payload = (n.payload ?? {}) as Payload;
-            const href = linkFor(locale, payload);
+            const rendered = renderNotification(n.type, n.payload, t, locale, student.timezone);
+            const href = notificationHref(locale, rendered);
             const body = (
               <div className="flex gap-3 px-4 py-3">
                 <span
@@ -64,9 +54,9 @@ async function Notifications() {
                   aria-label={n.readAt ? undefined : t.notifications.unread}
                 />
                 <div className="min-w-0">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted">{typeLabel[n.type]}</p>
-                  <p className={`text-sm ${n.readAt ? "" : "font-semibold"}`}>{payload.title ?? typeLabel[n.type]}</p>
-                  {payload.body && <p className="text-sm text-muted">{payload.body}</p>}
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted">{t.notifications.type[n.type]}</p>
+                  <p className={`text-sm ${n.readAt ? "" : "font-semibold"}`}>{rendered.title}</p>
+                  {rendered.body && <p className="text-sm text-muted">{rendered.body}</p>}
                   <p className="mt-0.5 text-xs text-muted">{formatDateTime(n.createdAt, student.timezone, locale)}</p>
                 </div>
               </div>

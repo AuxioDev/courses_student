@@ -3,13 +3,15 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getCurrentStudent } from "@/lib/auth";
-import { getHomework } from "@/lib/data";
+import { getHomework, receiptCode, type HomeworkAttempt } from "@/lib/data";
 import { formatDateTime, relativeDue } from "@/lib/dates";
 import { fmt, getI18n } from "@/i18n";
 import { localePath } from "@/i18n/config";
 import { Badge, Card, Section, Skeleton } from "@/components/ui";
-import { ChevronLeft } from "@/components/icons";
+import { CheckIcon, ChevronLeft } from "@/components/icons";
+import type { Dictionary } from "@/i18n/dictionaries/en";
 import { formatScore, homeworkStateTone } from "@/components/status";
+import { formatBytes } from "@/lib/upload-policy";
 import { SubmitForm } from "./submit-form";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -47,7 +49,14 @@ async function HomeworkDetail({ params }: Pick<PageProps<"/[lang]/homework/[id]"
   const tz = student.timezone;
   const submission = hw.submission;
   const canSubmit = hw.state !== "graded";
+  const [latest, ...earlier] = hw.attempts;
   const formTitle = !submission ? t.homework.handIn : hw.state === "returned" ? t.homework.resubmit : t.homework.editSubmission;
+  const timing = (a: HomeworkAttempt, index: number) => {
+    if (a.late) return { label: t.attempts.late, tone: "bad" as const };
+    const before = hw.attempts[index + 1];
+    if (before?.outcome === "returned") return { label: t.attempts.afterReturn, tone: "neutral" as const };
+    return { label: t.attempts.onTime, tone: "good" as const };
+  };
 
   return (
     <>
@@ -85,34 +94,40 @@ async function HomeworkDetail({ params }: Pick<PageProps<"/[lang]/homework/[id]"
         </Section>
       )}
 
-      {submission && (submission.status === "graded" || submission.status === "returned") && (
-        <Section title={submission.status === "graded" ? t.homework.grade : t.homework.returned}>
-          <Card className={submission.status === "graded" ? "bg-good-soft/50" : "bg-warn-soft/50"}>
-            {submission.score != null && (
+      {latest?.outcome && (
+        <Section title={latest.outcome === "graded" ? t.homework.grade : t.homework.returned}>
+          <Card className={latest.outcome === "graded" ? "bg-good-soft/50" : "bg-warn-soft/50"}>
+            {latest.score != null && (
               <p className="font-mono text-3xl font-semibold">
-                {formatScore(submission.score)}
+                {formatScore(latest.score)}
                 <span className="text-base text-muted">/{hw.maxScore}</span>
               </p>
             )}
-            {submission.feedback && <p className="mt-2 whitespace-pre-wrap text-sm">{submission.feedback}</p>}
+            {latest.feedback && <p className="mt-2 whitespace-pre-wrap text-sm">{latest.feedback}</p>}
           </Card>
         </Section>
       )}
 
-      {submission && (
+      {latest && (
         <Section title={t.homework.yourSubmission}>
-          <Card>
-            <p className="mb-2 text-xs text-muted">
-              {fmt(t.homework.handedIn, { date: formatDateTime(submission.submittedAt, tz, locale) })}
-              {submission.status === "late" && ` · ${t.homework.late}`}
-            </p>
-            {submission.content && <p className="whitespace-pre-wrap text-sm">{submission.content}</p>}
-            {submission.files.length > 0 && (
-              <div className="mt-2">
-                <LinkList urls={submission.files} />
+          <div className="rounded-2xl border-2 border-good/40 bg-surface p-4">
+            <div className="mb-3 flex items-start justify-between gap-3">
+              <div>
+                <p className="flex items-center gap-1.5 font-semibold text-good">
+                  <CheckIcon width={18} height={18} strokeWidth={2.5} /> {t.attempts.receiptTitle}
+                </p>
+                <p className="mt-0.5 text-sm">
+                  {fmt(t.attempts.attempt, { n: latest.number })} · {formatDateTime(latest.submittedAt, tz, locale)}
+                </p>
               </div>
-            )}
-          </Card>
+              <Badge tone={timing(latest, 0).tone}>{timing(latest, 0).label}</Badge>
+            </div>
+            <AttemptBody attempt={latest} labels={t.attempts} />
+            <p className="mt-3 border-t border-dashed border-line pt-2 font-mono text-xs text-muted">
+              {fmt(t.attempts.reference, { code: receiptCode(latest.id) })} · {hw.title}
+            </p>
+            {!latest.outcome && <p className="mt-1 text-xs text-muted">{t.attempts.waiting} · {t.attempts.receiptHint}</p>}
+          </div>
         </Section>
       )}
 
@@ -120,8 +135,14 @@ async function HomeworkDetail({ params }: Pick<PageProps<"/[lang]/homework/[id]"
         <Section title={formTitle}>
           <SubmitForm
             homeworkId={hw.id}
-            defaultContent={submission?.content ?? ""}
-            defaultLinks={submission?.files.join("\n") ?? ""}
+            studentId={student.id}
+            lastSubmittedAt={latest?.submittedAt.getTime() ?? 0}
+            defaultContent={latest?.content ?? ""}
+            defaultLinks={latest?.links.join("\n") ?? ""}
+            files={hw.pendingFiles}
+            keepFrom={latest && latest.files.length > 0 ? { number: latest.number, names: latest.files.map((f) => f.name) } : null}
+            fileLabels={t.files}
+            attemptLabels={t.attempts}
             submitLabel={submission ? t.homework.submitAgain : t.homework.submit}
             labels={t.homework}
             errors={t.errors}
@@ -129,6 +150,85 @@ async function HomeworkDetail({ params }: Pick<PageProps<"/[lang]/homework/[id]"
           />
         </Section>
       )}
+
+      {earlier.length > 0 && (
+        <Section title={t.attempts.history}>
+          <div className="space-y-2">
+            {earlier.map((a, i) => {
+              const next = hw.attempts[i];
+              const outcome =
+                a.outcome === "graded"
+                  ? t.attempts.graded
+                  : a.outcome === "returned"
+                    ? t.attempts.returned
+                    : fmt(t.attempts.replaced, { n: next.number });
+              return (
+                <details key={a.id} className="rounded-2xl border border-line bg-surface">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4">
+                    <div className="min-w-0">
+                      <p className="font-medium">{fmt(t.attempts.attempt, { n: a.number })}</p>
+                      <p className="text-xs text-muted">
+                        {formatDateTime(a.submittedAt, tz, locale)} · {timing(a, i + 1).label}
+                      </p>
+                    </div>
+                    <span className="shrink-0 text-right text-xs text-muted">
+                      {a.score != null && (
+                        <span className="block font-mono text-base font-semibold text-ink">
+                          {formatScore(a.score)}/{hw.maxScore}
+                        </span>
+                      )}
+                      {outcome}
+                    </span>
+                  </summary>
+                  <div className="border-t border-line p-4">
+                    {a.feedback && (
+                      <div className="mb-3 rounded-xl bg-warn-soft/50 p-3 text-sm">
+                        <p className="mb-1 text-xs font-semibold text-muted">{t.attempts.feedback}</p>
+                        <p className="whitespace-pre-wrap">{a.feedback}</p>
+                      </div>
+                    )}
+                    <AttemptBody attempt={a} labels={t.attempts} />
+                  </div>
+                </details>
+              );
+            })}
+          </div>
+        </Section>
+      )}
     </>
+  );
+}
+
+function AttemptBody({ attempt, labels }: { attempt: HomeworkAttempt; labels: Dictionary["attempts"] }) {
+  return (
+    <div className="space-y-3 text-sm">
+      {attempt.content && (
+        <div>
+          <p className="mb-0.5 text-xs font-semibold text-muted">{labels.answer}</p>
+          <p className="whitespace-pre-wrap">{attempt.content}</p>
+        </div>
+      )}
+      {attempt.files.length > 0 && (
+        <div>
+          <p className="mb-0.5 text-xs font-semibold text-muted">{labels.files}</p>
+          <ul className="space-y-1">
+            {attempt.files.map((f) => (
+              <li key={f.id} className="flex items-baseline gap-2">
+                <a href={`/api/files/${f.id}`} target="_blank" rel="noreferrer" className="truncate text-accent">
+                  {f.name}
+                </a>
+                <span className="shrink-0 text-xs text-muted">{formatBytes(f.size)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {attempt.links.length > 0 && (
+        <div>
+          <p className="mb-0.5 text-xs font-semibold text-muted">{labels.links}</p>
+          <LinkList urls={attempt.links} />
+        </div>
+      )}
+    </div>
   );
 }

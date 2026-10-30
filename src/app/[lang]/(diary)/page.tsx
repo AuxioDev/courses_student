@@ -1,7 +1,9 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { getCurrentStudent } from "@/lib/auth";
-import { getHomeworkList, getLessonsBetween, getRecentMarks } from "@/lib/data";
+import { getAttendanceAlerts, getHomeworkList, getLessonsBetween, getRecentMarks } from "@/lib/data";
+import { AttendanceAlert } from "@/components/attendance-alert";
+import { InstallPrompt } from "@/components/pwa/install-prompt";
 import { dayKey, dayRange, formatDayKey, relativeDue } from "@/lib/dates";
 import { fmt, getI18n } from "@/i18n";
 import { localePath } from "@/i18n/config";
@@ -25,10 +27,11 @@ async function Today() {
   const today = dayKey(now, student.timezone);
   const { start, end } = dayRange(today, student.timezone);
 
-  const [lessons, homework, marks] = await Promise.all([
+  const [lessons, homework, marks, attendance] = await Promise.all([
     getLessonsBetween(start, end),
     getHomeworkList(),
     getRecentMarks(5),
+    getAttendanceAlerts(),
   ]);
   const dueSoon = homework.filter(
     (hw) =>
@@ -47,6 +50,31 @@ async function Today() {
   return (
     <>
       <PageTitle title={fmt(t.today.greeting, { name: student.name.split(" ")[0] })} subtitle={formatDayKey(today, locale)} />
+      <InstallPrompt mode="banner" labels={t.pwa} />
+
+      {attendance && attendance.alerts.length > 0 && (
+        <Section
+          title={t.attendance.alertsTitle}
+          action={
+            <Link href={localePath(locale, "/attendance")} className="text-sm text-accent">
+              {t.common.all}
+            </Link>
+          }
+        >
+          <div className="space-y-2">
+            {attendance.alerts.map((c) => (
+              <AttendanceAlert
+                key={c.groupId}
+                course={c.course}
+                rate={c.rate!}
+                level={c.level}
+                settings={attendance.settings}
+                labels={t.attendance}
+              />
+            ))}
+          </div>
+        </Section>
+      )}
 
       <Section title={t.today.lessons}>
         {lessons.length === 0 ? (

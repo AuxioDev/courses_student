@@ -62,6 +62,12 @@ export async function getCurrentStudent(): Promise<Student> {
   return student;
 }
 
+// For Route Handlers, which answer 401 instead of redirecting.
+export async function getStudentOrNull(): Promise<Student | null> {
+  const student = await loadStudent();
+  return student && !student.mustChangePassword ? student : null;
+}
+
 // Only for the change-password page and action.
 export async function getStudentForPasswordChange(): Promise<Student> {
   const student = await loadStudent();

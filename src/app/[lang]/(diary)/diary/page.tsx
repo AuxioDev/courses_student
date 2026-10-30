@@ -115,7 +115,7 @@ async function DiaryDay({ searchParams }: Pick<PageProps<"/[lang]/diary">, "sear
                   <p className="whitespace-pre-wrap text-sm">{note.text}</p>
                   <form action={deleteNote}>
                     <input type="hidden" name="id" value={note.id} />
-                    <button type="submit" className="text-muted" aria-label={t.diary.deleteNote}>
+                    <button type="submit" className="icon-btn" aria-label={t.diary.deleteNote}>
                       <TrashIcon width={18} height={18} />
                     </button>
                   </form>

@@ -9,6 +9,11 @@ import { createSession, deleteSession } from "@/lib/session";
 import { getCurrentStudent, getStudentForPasswordChange } from "@/lib/auth";
 import { hashPassword, hashToken, newPasswordSchema, verifyPassword } from "@/lib/passwords";
 import { clientIp, isLoginBlocked, recordLoginAttempt } from "@/lib/rate-limit";
+import { sendResetLink } from "@/lib/password-reset";
+import { NOTIFICATION_TYPES } from "@/lib/notifications/types";
+import { deleteObject, isValidKey, objectSize } from "@/lib/storage";
+import { MAX_FILES_PER_HOMEWORK, contentTypeFor, extensionOf, type UploadErrorCode } from "@/lib/upload-policy";
+import { checkCanUpload, checkNewFile, cleanFileName, keyBelongsTo, latestAttempt } from "@/lib/uploads";
 import { isDayKey } from "@/lib/dates";
 import { getRequestLocale } from "@/i18n";
 import { hasLocale, LOCALE_COOKIE, localePath } from "@/i18n/config";
@@ -64,7 +69,11 @@ export async function logout() {
 // Bumping sessionVersion invalidates every cookie issued before now.
 export async function logoutEverywhere() {
   const student = await getCurrentStudent();
-  await db.user.update({ where: { id: student.id }, data: { sessionVersion: { increment: 1 } } });
+  await db.$transaction([
+    db.user.update({ where: { id: student.id }, data: { sessionVersion: { increment: 1 } } }),
+    // Signed-out devices must stop getting this student's notifications.
+    db.pushSubscription.deleteMany({ where: { userId: student.id } }),
+  ]);
   await deleteSession();
   redirect(localePath(await getRequestLocale(), "/login"));
 }
@@ -99,6 +108,23 @@ export async function changePassword(_prev: FormState, formData: FormData): Prom
   if (student.mustChangePassword) redirect(localePath(await getRequestLocale(), "/"));
   refresh();
   return { ok: "passwordChanged" };
+}
+
+const forgotSchema = z.object({ email: z.email().transform((e) => e.toLowerCase().trim()) });
+
+// Always gives the same answer, whether or not the email is registered.
+export async function requestPasswordReset(_prev: FormState, formData: FormData): Promise<FormState> {
+  const parsed = forgotSchema.safeParse({ email: formData.get("email") });
+  if (!parsed.success) return { error: "missingCredentials" };
+
+  // Counted with the login attempts, so one IP can't send endless reset emails.
+  const ip = await clientIp();
+  const key = `reset:${parsed.data.email}`;
+  if (await isLoginBlocked(key, ip)) return { error: "tooManyAttempts" };
+  await recordLoginAttempt(key, ip, false);
+
+  await sendResetLink(parsed.data.email);
+  return { ok: "resetSent" };
 }
 
 // Links come from scripts/reset-link.ts (an admin runs it) until email arrives in Step 6.
@@ -143,33 +169,101 @@ export async function submitHomework(_prev: FormState, formData: FormData): Prom
   });
   if (!parsed.success) return { error: "badLinks" };
   const { homeworkId, content, links } = parsed.data;
-  if (!content && links.length === 0) return { error: "emptySubmission" };
+  const keepFiles = formData.get("keepFiles") === "on";
 
-  const homework = await db.homework.findFirst({
-    where: {
-      id: homeworkId,
-      group: { enrollments: { some: { studentId: student.id, status: "active" } } },
-    },
-    include: { group: { select: { term: { select: { locked: true } } } } },
-  });
-  if (!homework) return { error: "homeworkNotFound" };
-  if (homework.group.term.locked) return { error: "termLocked" };
+  const problem = await checkCanUpload(student.id, homeworkId);
+  if (problem) return { error: problem };
 
+  const homework = await db.homework.findUniqueOrThrow({ where: { id: homeworkId }, select: { dueAt: true } });
   const existing = await db.submission.findUnique({
     where: { homeworkId_studentId: { homeworkId, studentId: student.id } },
+    select: { status: true },
   });
-  if (existing?.status === "graded") return { error: "alreadyGraded" };
+  const previous = await latestAttempt(student.id, homeworkId);
+  const keptFiles = keepFiles && previous ? await db.submissionFile.findMany({ where: { attemptId: previous.id } }) : [];
+  const newFiles = await db.submissionFile.count({ where: { homeworkId, studentId: student.id, attemptId: null } });
+  if (!content && links.length === 0 && newFiles + keptFiles.length === 0) return { error: "emptySubmission" };
+  if (newFiles + keptFiles.length > MAX_FILES_PER_HOMEWORK) return { error: "tooManyFiles" };
 
   const now = new Date();
-  const status = now > homework.dueAt ? "late" : "submitted";
-  await db.submission.upsert({
-    where: { homeworkId_studentId: { homeworkId, studentId: student.id } },
-    create: { homeworkId, studentId: student.id, content, files: links, status, submittedAt: now },
-    update: { content, files: links, status, submittedAt: now, score: null },
+  // Only the first hand-in is measured against the deadline: work the teacher
+  // returned for revision is never late.
+  const late = existing?.status !== "returned" && now > homework.dueAt;
+  const status = late ? "late" : "submitted";
+
+  await db.$transaction(async (tx) => {
+    const submission = await tx.submission.upsert({
+      where: { homeworkId_studentId: { homeworkId, studentId: student.id } },
+      create: { homeworkId, studentId: student.id, content, links, status, submittedAt: now },
+      update: { content, links, status, submittedAt: now, score: null, feedback: null },
+    });
+    const attempt = await tx.submissionAttempt.create({
+      data: { submissionId: submission.id, number: (previous?.number ?? 0) + 1, content, links, late, submittedAt: now },
+    });
+    // New uploads are handed in with this attempt; kept files are listed again.
+    await tx.submissionFile.updateMany({
+      where: { homeworkId, studentId: student.id, attemptId: null },
+      data: { attemptId: attempt.id },
+    });
+    if (keptFiles.length > 0) {
+      await tx.submissionFile.createMany({
+        data: keptFiles.map((f) => ({
+          homeworkId: f.homeworkId,
+          studentId: f.studentId,
+          name: f.name,
+          size: f.size,
+          contentType: f.contentType,
+          storageKey: f.storageKey,
+          attemptId: attempt.id,
+        })),
+      });
+    }
   });
 
   refresh();
-  return { ok: status === "late" ? "submittedLate" : "submitted" };
+  return { ok: late ? "submittedLate" : "submitted" };
+}
+
+// Step 2 of an upload (after the browser has stored the file): check what was
+// actually stored and record it. Anything that fails the checks is deleted again.
+export async function attachUpload(input: { homeworkId: string; key: string; name: string }): Promise<{ error?: UploadErrorCode }> {
+  const student = await getCurrentStudent();
+  const { homeworkId, key } = input;
+  const name = cleanFileName(String(input.name ?? ""));
+  const contentType = contentTypeFor(name);
+  if (!isValidKey(key) || !keyBelongsTo(key, student.id, homeworkId) || !contentType || extensionOf(key) !== extensionOf(name)) {
+    return { error: "uploadFailed" };
+  }
+
+  const size = await objectSize(key);
+  if (size === null) return { error: "uploadFailed" };
+  const problem = await checkNewFile(student.id, homeworkId, name, size);
+  if (problem) {
+    await deleteObject(key);
+    return { error: problem };
+  }
+
+  await db.submissionFile.create({
+    data: { homeworkId, studentId: student.id, name, size, contentType, storageKey: key },
+  });
+  refresh();
+  return {};
+}
+
+export async function removeUpload(fileId: string): Promise<{ error?: UploadErrorCode }> {
+  const student = await getCurrentStudent();
+  // Handed-in files belong to their attempt and can't be removed.
+  const file = await db.submissionFile.findFirst({ where: { id: String(fileId), studentId: student.id, attemptId: null } });
+  if (!file) return { error: "uploadFailed" };
+  const problem = await checkCanUpload(student.id, file.homeworkId);
+  if (problem) return { error: problem };
+
+  await db.submissionFile.delete({ where: { id: file.id } });
+  if ((await db.submissionFile.count({ where: { storageKey: file.storageKey } })) === 0) {
+    await deleteObject(file.storageKey);
+  }
+  refresh();
+  return {};
 }
 
 // ---------- Notes ----------
@@ -234,6 +328,47 @@ export async function deleteTodo(formData: FormData) {
 }
 
 // ---------- Notifications ----------
+
+export async function updateNotificationPreferences(_prev: FormState, formData: FormData): Promise<FormState> {
+  const student = await getCurrentStudent();
+  await db.$transaction(
+    NOTIFICATION_TYPES.map((type) => {
+      const choice = { email: formData.get(`email:${type}`) === "on", push: formData.get(`push:${type}`) === "on" };
+      return db.notificationPreference.upsert({
+        where: { userId_type: { userId: student.id, type } },
+        create: { userId: student.id, type, ...choice },
+        update: choice,
+      });
+    }),
+  );
+  refresh();
+  return { ok: "emailSaved" };
+}
+
+const pushSubscriptionSchema = z.object({
+  endpoint: z.url({ protocol: /^https$/ }).max(1000),
+  keys: z.object({ p256dh: z.string().min(1).max(200), auth: z.string().min(1).max(100) }),
+});
+
+// Called by the browser after the student allowed notifications on this device.
+export async function savePushSubscription(subscription: unknown): Promise<{ ok: boolean }> {
+  const student = await getCurrentStudent();
+  const parsed = pushSubscriptionSchema.safeParse(subscription);
+  if (!parsed.success) return { ok: false };
+  const { endpoint, keys } = parsed.data;
+  // An endpoint belongs to one browser; if someone else used it before, it's now this student's.
+  await db.pushSubscription.upsert({
+    where: { endpoint },
+    create: { userId: student.id, endpoint, p256dh: keys.p256dh, auth: keys.auth },
+    update: { userId: student.id, p256dh: keys.p256dh, auth: keys.auth },
+  });
+  return { ok: true };
+}
+
+export async function removePushSubscription(endpoint: string) {
+  const student = await getCurrentStudent();
+  await db.pushSubscription.deleteMany({ where: { endpoint: String(endpoint), userId: student.id } });
+}
 
 export async function markAllNotificationsRead() {
   const student = await getCurrentStudent();

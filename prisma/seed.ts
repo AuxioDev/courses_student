@@ -2,6 +2,8 @@
 // Until the Admin Panel and Teacher App exist, this is the only way to get data in.
 // Run with: npm run db:seed   (wipes all tables first)
 import "dotenv/config";
+import { rm } from "node:fs/promises";
+import path from "node:path";
 import bcrypt from "bcryptjs";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
@@ -12,9 +14,15 @@ const TZ = "Asia/Baku"; // also the schema default for new users
 const PASSWORD = "password123";
 
 async function wipe() {
+  // Files uploaded in local development (see src/lib/storage.ts).
+  await rm(path.join(process.cwd(), ".uploads"), { recursive: true, force: true });
+  await rm(path.join(process.cwd(), ".emails"), { recursive: true, force: true });
   await db.$transaction([
+    db.submissionFile.deleteMany(),
+    db.submissionAttempt.deleteMany(),
     db.loginAttempt.deleteMany(),
     db.authToken.deleteMany(),
+    db.notificationPreference.deleteMany(),
     db.notification.deleteMany(),
     db.studentTodo.deleteMany(),
     db.studentNote.deleteMany(),
@@ -31,6 +39,7 @@ async function wipe() {
     db.term.deleteMany(),
     db.course.deleteMany(),
     db.user.deleteMany(),
+    db.schoolSettings.deleteMany(),
   ]);
 }
 
@@ -132,7 +141,10 @@ async function main() {
         await db.attendance.createMany({
           data: students.map((s, i) => {
             const roll = (((offset * 7 + i * 13) % 10) + 10) % 10;
-            const status = roll === 3 ? "late" : roll === 7 ? "absent" : roll === 9 ? "excused" : "present";
+            // Aysel misses a few more Python lessons, so the attendance warning shows.
+            const extraAbsence = i === 0 && group.name === "PY-1" && roll === 1;
+            const status =
+              roll === 3 ? "late" : roll === 7 || extraAbsence ? "absent" : roll === 9 ? "excused" : "present";
             return { lessonId: lesson.id, studentId: s.id, status };
           }),
         });
@@ -169,16 +181,49 @@ async function main() {
         const dueAgo = (now.getTime() - hw.dueAt.getTime()) / 864e5;
         if (dueAgo > 7) {
           const score = 60 + Math.abs(offset * 11) % 40;
+          const feedback = score > 85 ? "Excellent work!" : "Good effort — check exercise 3 again.";
+          const submittedAt = new Date(hw.dueAt.getTime() - 3 * 60 * 60_000);
+          const gradedAt = new Date(hw.dueAt.getTime() + 24 * 60 * 60_000);
+          // Every third graded homework went through a revision first, to show attempt history.
+          const revised = offset % 3 === 0;
+          const firstAt = new Date(submittedAt.getTime() - 2 * 24 * 60 * 60_000);
           await db.submission.create({
             data: {
               homeworkId: hw.id,
               studentId: me.id,
               content: "My answers are in the linked document.",
-              files: ["https://docs.example.com/my-answers"],
-              submittedAt: new Date(hw.dueAt.getTime() - 3 * 60 * 60_000),
+              links: ["https://docs.example.com/my-answers"],
+              submittedAt,
               status: "graded",
               score,
-              feedback: score > 85 ? "Excellent work!" : "Good effort — check exercise 3 again.",
+              feedback,
+              attempts: {
+                create: [
+                  ...(revised
+                    ? [
+                        {
+                          number: 1,
+                          content: "Exercises 1–5 done.",
+                          links: [],
+                          submittedAt: firstAt,
+                          outcome: "returned" as const,
+                          feedback: "The reflection is missing — please add it.",
+                          reviewedAt: new Date(firstAt.getTime() + 12 * 60 * 60_000),
+                        },
+                      ]
+                    : []),
+                  {
+                    number: revised ? 2 : 1,
+                    content: "My answers are in the linked document.",
+                    links: ["https://docs.example.com/my-answers"],
+                    submittedAt,
+                    outcome: "graded" as const,
+                    score,
+                    feedback,
+                    reviewedAt: gradedAt,
+                  },
+                ],
+              },
             },
           });
           await db.mark.create({
@@ -189,29 +234,54 @@ async function main() {
               type: "homework",
               value: score,
               createdBy: teacher.id,
-              createdAt: new Date(hw.dueAt.getTime() + 24 * 60 * 60_000),
+              createdAt: gradedAt,
             },
           });
         } else if (dueAgo > 3 && group.name === "ENG-B2-1") {
+          const submittedAt = new Date(hw.dueAt.getTime() - 60 * 60_000);
+          const feedback = "Please add the reflection paragraph and resubmit.";
           await db.submission.create({
             data: {
               homeworkId: hw.id,
               studentId: me.id,
               content: "First draft attached.",
-              files: [],
-              submittedAt: new Date(hw.dueAt.getTime() - 60 * 60_000),
+              links: [],
+              submittedAt,
               status: "returned",
-              feedback: "Please add the reflection paragraph and resubmit.",
+              feedback,
+              attempts: {
+                create: {
+                  number: 1,
+                  content: "First draft attached.",
+                  links: [],
+                  submittedAt,
+                  outcome: "returned",
+                  feedback,
+                  reviewedAt: new Date(submittedAt.getTime() + 24 * 60 * 60_000),
+                },
+              },
             },
           });
         } else if (dueAgo > 0 && dueAgo <= 3 && group.name === "PY-1") {
+          const submittedAt = new Date(hw.dueAt.getTime() - 2 * 60 * 60_000);
           await db.submission.create({
-            data: { homeworkId: hw.id, studentId: me.id, content: "print('done')", files: [], status: "submitted" },
+            data: {
+              homeworkId: hw.id,
+              studentId: me.id,
+              content: "print('done')",
+              links: [],
+              status: "submitted",
+              submittedAt,
+              attempts: { create: { number: 1, content: "print('done')", links: [], submittedAt } },
+            },
           });
         }
       }
     }
   }
+
+  await db.schoolSettings.create({ data: { id: 1 } });
+  await seedPastTerm(students, leyla);
 
   await db.studentTodo.createMany({
     data: [
@@ -224,29 +294,103 @@ async function main() {
     data: { studentId: me.id, date: new Date(`${today}T00:00:00Z`), text: "Ask Tural about list comprehensions." },
   });
 
-  const upcomingHw = await db.homework.findFirst({ where: { dueAt: { gt: now } }, orderBy: { dueAt: "asc" } });
+  // Payloads follow src/lib/notifications/types.ts, so they render in every language.
+  const upcomingHw = await db.homework.findFirst({
+    where: { dueAt: { gt: now } },
+    orderBy: { dueAt: "asc" },
+    include: { group: { select: { course: { select: { title: true } } } } },
+  });
+  const movedLesson = await db.lesson.findFirst({ where: { status: "moved" }, include: { group: { select: { course: { select: { title: true } } } } } });
   await db.notification.createMany({
     data: [
-      {
-        userId: me.id,
-        type: "new_homework",
-        payload: { title: upcomingHw?.title ?? "New homework", body: "Due in a few days.", homeworkId: upcomingHw?.id },
-      },
-      {
-        userId: me.id,
-        type: "lesson_changed",
-        payload: { title: "English B2 lesson moved", body: "Check the new time in your schedule.", date: addDays(today, 2) },
-      },
+      ...(upcomingHw
+        ? [
+            {
+              userId: me.id,
+              type: "new_homework" as const,
+              payload: {
+                homeworkId: upcomingHw.id,
+                homeworkTitle: upcomingHw.title,
+                course: upcomingHw.group.course.title,
+                dueAt: upcomingHw.dueAt.toISOString(),
+              },
+            },
+          ]
+        : []),
+      ...(movedLesson
+        ? [
+            {
+              userId: me.id,
+              type: "lesson_changed" as const,
+              payload: {
+                course: movedLesson.group.course.title,
+                change: "moved",
+                date: dayKey(movedLesson.startsAt, TZ),
+                newStartsAt: new Date(movedLesson.startsAt.getTime() + 24 * 60 * 60_000).toISOString(),
+              },
+            },
+          ]
+        : []),
       {
         userId: me.id,
         type: "new_mark",
-        payload: { title: "New mark in Python Basics" },
+        payload: { course: "Python Basics", markType: "quiz", value: 88 },
         readAt: now,
       },
     ],
   });
 
   console.log(`Seeded. Log in as student@example.com / ${PASSWORD}`);
+}
+
+// A finished term with its own course, low attendance and a published final grade,
+// so the term switcher, the "at risk" alert and final grades can be tried out.
+async function seedPastTerm(students: { id: string }[], teacher: { id: string }) {
+  const [me] = students;
+  const term = await db.term.create({
+    data: { name: "Spring 2026", startDate: new Date("2026-02-02"), endDate: new Date("2026-06-12"), locked: true },
+  });
+  const course = await db.course.create({ data: { title: "English A2", description: "Elementary English" } });
+  const group = await db.group.create({ data: { name: "ENG-A2-3", courseId: course.id, teacherId: teacher.id, termId: term.id } });
+  await db.enrollment.createMany({ data: students.map((s) => ({ groupId: group.id, studentId: s.id })) });
+
+  const topics = ["Present simple", "Past simple", "Food", "Travel", "Shopping", "Health", "Weather", "Hobbies"];
+  for (let week = 0; week < 16; week++) {
+    const startsAt = new Date(Date.UTC(2026, 1, 2 + week * 7, 13, 0)); // Mondays 17:00 in Baku
+    const lesson = await db.lesson.create({
+      data: {
+        groupId: group.id,
+        teacherId: teacher.id,
+        startsAt,
+        endsAt: new Date(startsAt.getTime() + 90 * 60_000),
+        status: "done",
+        topic: topics[week % topics.length],
+      },
+    });
+    await db.attendance.createMany({
+      data: students.map((s, i) => ({
+        lessonId: lesson.id,
+        studentId: s.id,
+        // Aysel missed 5 of 16 lessons: 69%, under the 70% limit.
+        status: i === 0 && week % 3 === 1 && week < 15 ? "absent" : "present",
+      })),
+    });
+    if (week % 3 === 0) {
+      await db.mark.create({
+        data: {
+          studentId: me.id,
+          groupId: group.id,
+          lessonId: lesson.id,
+          type: week === 15 ? "exam" : "quiz",
+          value: 68 + ((week * 5) % 25),
+          weight: week === 15 ? 3 : 2,
+          createdBy: teacher.id,
+          createdAt: lesson.endsAt,
+        },
+      });
+    }
+  }
+  await db.finalGrade.create({ data: { studentId: me.id, groupId: group.id, termId: term.id, value: 78, published: true } });
 }
 
 main()

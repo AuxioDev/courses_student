@@ -9,7 +9,7 @@ import {
 import { defaultLocale, hasLocale, LOCALE_COOKIE, localePath, matchLocale } from "@/i18n/config";
 
 const ONE_YEAR = 60 * 60 * 24 * 365;
-const PUBLIC_PAGES = new Set(["login", "reset-password"]);
+const PUBLIC_PAGES = new Set(["login", "forgot-password", "reset-password"]);
 
 // 1. Every page lives under /az, /en or /ru; add the prefix when it's missing.
 // 2. Optimistic login check only: real authorization happens in getCurrentStudent().
@@ -48,5 +48,7 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/|favicon.ico|icon.svg|manifest.webmanifest).*)"],
+  // API routes do their own auth checks and have no language prefix.
+  // Files with an extension (sw.js, icons, offline.html, manifest) are served as they are.
+  matcher: ["/((?!_next/|api/|.*\\..*).*)"],
 };

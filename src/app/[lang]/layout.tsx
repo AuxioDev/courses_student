@@ -4,6 +4,7 @@ import { lang } from "next/root-params";
 import { locales } from "@/i18n/config";
 import { getI18n } from "@/i18n";
 import "../globals.css";
+import { ServiceWorkerRegister } from "@/components/pwa/sw-register";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,6 +27,7 @@ export async function generateMetadata(): Promise<Metadata> {
     description: t.meta.description,
     applicationName: t.meta.appName,
     appleWebApp: { capable: true, title: t.meta.appName, statusBarStyle: "default" },
+    icons: { icon: "/icon.svg", apple: "/icons/apple-touch-icon.png" },
   };
 }
 
@@ -42,7 +44,10 @@ export const viewport: Viewport = {
 export default async function RootLayout({ children }: LayoutProps<"/[lang]">) {
   return (
     <html lang={await lang()} className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-      <body className="min-h-full font-sans">{children}</body>
+      <body className="min-h-full font-sans">
+        {children}
+        <ServiceWorkerRegister />
+      </body>
     </html>
   );
 }

@@ -49,6 +49,12 @@ enum MarkType {
   homework
 }
 
+// Set by the teacher on each attempt. null = not reviewed (yet, or replaced by a newer attempt).
+enum AttemptOutcome {
+  returned
+  graded
+}
+
 enum AuthTokenType {
   reset
 }
@@ -74,19 +80,22 @@ model User {
   mustChangePassword Boolean  @default(false) @map("must_change_password") // set with a temporary password
   createdAt          DateTime @default(now()) @map("created_at")
 
-  teachingGroups Group[]        @relation("GroupTeacher")
-  taughtLessons  Lesson[]       @relation("LessonTeacher")
-  enrollments    Enrollment[]
-  attendance     Attendance[]
-  submissions    Submission[]
-  marks          Mark[]         @relation("MarkStudent")
-  marksGiven     Mark[]         @relation("MarkCreator")
-  markChanges    MarkHistory[]
-  finalGrades    FinalGrade[]
-  notes          StudentNote[]
-  todos          StudentTodo[]
-  notifications  Notification[]
-  authTokens     AuthToken[]
+  teachingGroups          Group[]                  @relation("GroupTeacher")
+  taughtLessons           Lesson[]                 @relation("LessonTeacher")
+  enrollments             Enrollment[]
+  attendance              Attendance[]
+  submissions             Submission[]
+  uploads                 SubmissionFile[]
+  marks                   Mark[]                   @relation("MarkStudent")
+  marksGiven              Mark[]                   @relation("MarkCreator")
+  markChanges             MarkHistory[]
+  finalGrades             FinalGrade[]
+  notes                   StudentNote[]
+  todos                   StudentTodo[]
+  notifications           Notification[]
+  authTokens              AuthToken[]
+  notificationPreferences NotificationPreference[]
+  pushSubscriptions       PushSubscription[]
 
   @@map("users")
 }
@@ -208,9 +217,10 @@ model Homework {
   maxScore    Int      @default(100) @map("max_score")
   createdAt   DateTime @default(now()) @map("created_at")
 
-  lesson      Lesson?      @relation(fields: [lessonId], references: [id])
-  group       Group        @relation(fields: [groupId], references: [id])
+  lesson      Lesson?          @relation(fields: [lessonId], references: [id])
+  group       Group            @relation(fields: [groupId], references: [id])
   submissions Submission[]
+  uploads     SubmissionFile[]
   marks       Mark[]
 
   @@index([groupId, dueAt])
@@ -222,14 +232,15 @@ model Submission {
   homeworkId  String           @map("homework_id")
   studentId   String           @map("student_id")
   content     String?
-  files       String[]
+  links       String[]
   submittedAt DateTime         @default(now()) @map("submitted_at")
   status      SubmissionStatus @default(submitted)
   score       Int?
   feedback    String?
 
-  homework Homework @relation(fields: [homeworkId], references: [id])
-  student  User     @relation(fields: [studentId], references: [id])
+  homework Homework            @relation(fields: [homeworkId], references: [id])
+  student  User                @relation(fields: [studentId], references: [id])
+  attempts SubmissionAttempt[]
 
   @@unique([homeworkId, studentId])
   @@map("submissions")
@@ -323,10 +334,14 @@ model Notification {
   type      NotificationType
   payload   Json
   readAt    DateTime?        @map("read_at")
+  // Same key for the same event, so a reminder is never sent twice.
+  dedupeKey String?          @map("dedupe_key")
+  emailedAt DateTime?        @map("emailed_at")
   createdAt DateTime         @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id])
 
+  @@unique([userId, dedupeKey])
   @@index([userId, readAt])
   @@map("notifications")
 }
@@ -357,4 +372,93 @@ model LoginAttempt {
   @@index([email, createdAt])
   @@index([ip, createdAt])
   @@map("login_attempts")
+}
+
+// A file a student uploaded for a homework. submissionId is null until they press
+// Submit, so teachers only see files that were handed in.
+// A file a student uploaded for a homework. attemptId is null until they press
+// Submit, so teachers only see files that were handed in. When a student keeps
+// files for a new attempt, the rows are copied and share the same storageKey.
+model SubmissionFile {
+  id          String   @id @default(cuid())
+  homeworkId  String   @map("homework_id")
+  studentId   String   @map("student_id")
+  attemptId   String?  @map("attempt_id")
+  name        String
+  size        Int
+  contentType String   @map("content_type")
+  storageKey  String   @map("storage_key")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  homework Homework           @relation(fields: [homeworkId], references: [id])
+  student  User               @relation(fields: [studentId], references: [id])
+  attempt  SubmissionAttempt? @relation(fields: [attemptId], references: [id])
+
+  @@index([homeworkId, studentId])
+  @@index([storageKey])
+  @@map("submission_files")
+}
+
+// One hand-in. Every Submit creates a new attempt; earlier ones are never changed
+// by the student. Submission mirrors the latest attempt's status, score and feedback.
+model SubmissionAttempt {
+  id           String          @id @default(cuid())
+  submissionId String          @map("submission_id")
+  number       Int
+  content      String?
+  links        String[]
+  submittedAt  DateTime        @default(now()) @map("submitted_at")
+  late         Boolean         @default(false)
+  outcome      AttemptOutcome?
+  score        Int?
+  feedback     String?
+  reviewedAt   DateTime?       @map("reviewed_at")
+
+  submission Submission       @relation(fields: [submissionId], references: [id])
+  files      SubmissionFile[]
+
+  @@unique([submissionId, number])
+  @@map("submission_attempts")
+}
+
+// School-wide rules, edited in the Admin Panel. Always a single row (id = 1).
+model SchoolSettings {
+  id                  Int  @id @default(1)
+  // Attendance percentages below which students see a warning / an "at risk" alert.
+  attendanceWarnBelow Int  @default(80) @map("attendance_warn_below")
+  attendanceRiskBelow Int  @default(70) @map("attendance_risk_below")
+  // Default weight per mark type, used by the Teacher app when a mark is given.
+  markWeights         Json @default("{\"classwork\": 1, \"quiz\": 2, \"exam\": 3, \"homework\": 1}") @map("mark_weights")
+
+  @@map("school_settings")
+}
+
+// Per-type email choice. No row = the default for that type (see src/lib/notifications/types.ts).
+// In-app notifications are always on.
+model NotificationPreference {
+  userId String           @map("user_id")
+  type   NotificationType
+  email  Boolean
+  push   Boolean          @default(true)
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@id([userId, type])
+  @@map("notification_preferences")
+}
+
+// A browser or installed app that accepted push notifications. Deleted when the
+// push service says it's gone (404/410) or when the student signs out everywhere.
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("push_subscriptions")
 }

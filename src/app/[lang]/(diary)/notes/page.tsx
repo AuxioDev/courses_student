@@ -51,11 +51,15 @@ async function Notes() {
                   <button
                     type="submit"
                     aria-label={todo.done ? t.notes.markNotDone : t.notes.markDone}
-                    className={`flex h-6 w-6 items-center justify-center rounded-md border ${
-                      todo.done ? "border-good bg-good text-white" : "border-line"
-                    }`}
+                    className="-m-2.5 flex h-11 w-11 items-center justify-center"
                   >
-                    {todo.done && <CheckIcon width={16} height={16} strokeWidth={3} />}
+                    <span
+                      className={`flex h-6 w-6 items-center justify-center rounded-md border ${
+                        todo.done ? "border-good bg-good text-white" : "border-line"
+                      }`}
+                    >
+                      {todo.done && <CheckIcon width={16} height={16} strokeWidth={3} />}
+                    </span>
                   </button>
                 </form>
                 <div className={`min-w-0 flex-1 ${todo.done ? "text-muted line-through" : ""}`}>
@@ -68,7 +72,7 @@ async function Notes() {
                 </div>
                 <form action={deleteTodo}>
                   <input type="hidden" name="id" value={todo.id} />
-                  <button type="submit" className="text-muted" aria-label={t.notes.deleteTodo}>
+                  <button type="submit" className="icon-btn" aria-label={t.notes.deleteTodo}>
                     <TrashIcon width={18} height={18} />
                   </button>
                 </form>
@@ -104,7 +108,7 @@ async function Notes() {
                     </div>
                     <form action={deleteNote}>
                       <input type="hidden" name="id" value={note.id} />
-                      <button type="submit" className="text-muted" aria-label={t.diary.deleteNote}>
+                      <button type="submit" className="icon-btn" aria-label={t.diary.deleteNote}>
                         <TrashIcon width={18} height={18} />
                       </button>
                     </form>

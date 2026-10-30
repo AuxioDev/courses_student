@@ -1,8 +1,11 @@
 import "server-only";
 import { db } from "./db";
 import { getCurrentStudent } from "./auth";
-import { dayRange, type DayKey } from "./dates";
-import type { AttendanceStatus, SubmissionStatus } from "@/generated/prisma/enums";
+import { dayKey, dayRange, type DayKey } from "./dates";
+import type { NotificationType, SubmissionStatus } from "@/generated/prisma/enums";
+import { EMAIL_DEFAULTS, NOTIFICATION_TYPES, PUSH_DEFAULTS } from "./notifications/types";
+import { attendanceLevel, attendanceRate, needsAttention, weightedAverage } from "./grading";
+import { getSchoolSettings } from "./settings";
 
 // Every query here resolves the student itself, so callers can never ask for
 // another student's data by passing an id.
@@ -70,6 +73,8 @@ export async function getHomeworkList() {
 
 export type HomeworkItem = Awaited<ReturnType<typeof getHomeworkList>>[number];
 
+const fileFields = { id: true, name: true, size: true, contentType: true } as const;
+
 export async function getHomework(id: string) {
   const student = await getCurrentStudent();
   const groupIds = await activeGroupIds(student.id);
@@ -78,48 +83,102 @@ export async function getHomework(id: string) {
     include: {
       group: { select: { name: true, course: { select: { title: true } }, teacher: { select: { name: true } } } },
       lesson: { select: { startsAt: true, topic: true } },
-      submissions: { where: { studentId: student.id } },
+      submissions: {
+        where: { studentId: student.id },
+        include: {
+          attempts: {
+            orderBy: { number: "desc" },
+            include: { files: { select: fileFields, orderBy: { createdAt: "asc" } } },
+          },
+        },
+      },
+      // Uploaded but not handed in yet: only the student sees these.
+      uploads: { where: { studentId: student.id, attemptId: null }, select: fileFields, orderBy: { createdAt: "asc" } },
     },
   });
   if (!hw) return null;
-  const { submissions, ...rest } = hw;
+  const { submissions, uploads, ...rest } = hw;
   const submission = submissions[0] ?? null;
-  return { ...rest, submission, state: homeworkState(hw.dueAt, submission?.status, new Date()) };
+  return {
+    ...rest,
+    submission,
+    attempts: submission?.attempts ?? [],
+    pendingFiles: uploads,
+    state: homeworkState(hw.dueAt, submission?.status, new Date()),
+  };
+}
+
+export type HomeworkAttempt = NonNullable<Awaited<ReturnType<typeof getHomework>>>["attempts"][number];
+
+// Short code printed on the receipt; an admin can find the attempt by its id suffix.
+export function receiptCode(attemptId: string) {
+  const tail = attemptId.slice(-8).toUpperCase();
+  return `${tail.slice(0, 4)}-${tail.slice(4)}`;
+}
+
+// ---------- Terms ----------
+
+// The terms the student has courses in, newest first. "current" is the one that
+// contains today, or else the latest one that has started.
+export async function getStudentTerms() {
+  const student = await getCurrentStudent();
+  const terms = await db.term.findMany({
+    where: { groups: { some: { enrollments: { some: { studentId: student.id } } } } },
+    orderBy: { startDate: "desc" },
+  });
+  const today = dayKey(new Date(), student.timezone);
+  const key = (d: Date) => d.toISOString().slice(0, 10);
+  const current =
+    terms.find((t) => key(t.startDate) <= today && today <= key(t.endDate)) ??
+    terms.find((t) => key(t.startDate) <= today) ??
+    terms[terms.length - 1];
+  return terms.map((t) => ({
+    id: t.id,
+    name: t.name,
+    startDate: t.startDate,
+    endDate: t.endDate,
+    locked: t.locked,
+    ended: key(t.endDate) < today,
+    current: t.id === current?.id,
+  }));
+}
+
+export type StudentTerm = Awaited<ReturnType<typeof getStudentTerms>>[number];
+
+// The requested term if it's one of the student's, otherwise the current one.
+export async function resolveTerm(requested: unknown) {
+  const terms = await getStudentTerms();
+  const term = terms.find((t) => t.id === requested) ?? terms.find((t) => t.current) ?? null;
+  return { terms, term };
 }
 
 // ---------- Marks ----------
 
-export function weightedAverage(marks: { value: number; weight: number }[]) {
-  const totalWeight = marks.reduce((s, m) => s + m.weight, 0);
-  if (totalWeight === 0) return null;
-  return marks.reduce((s, m) => s + m.value * m.weight, 0) / totalWeight;
-}
-
-export async function getMarksByCourse() {
+export async function getMarksByCourse(termId: string) {
   const student = await getCurrentStudent();
   const enrollments = await db.enrollment.findMany({
-    where: { studentId: student.id },
+    where: { studentId: student.id, group: { termId } },
     include: {
       group: {
         include: {
           course: { select: { title: true, gradingScale: true } },
-          term: { select: { name: true } },
           marks: {
             where: { studentId: student.id },
             include: { homework: { select: { title: true } }, lesson: { select: { topic: true } } },
             orderBy: { createdAt: "desc" },
           },
-          finalGrades: { where: { studentId: student.id, published: true }, select: { value: true } },
+          // Only published final grades ever reach the student.
+          finalGrades: { where: { studentId: student.id, termId, published: true }, select: { value: true } },
         },
       },
     },
+    orderBy: { group: { course: { title: "asc" } } },
   });
   return enrollments.map(({ group }) => ({
     groupId: group.id,
     groupName: group.name,
     course: group.course.title,
     gradingScale: group.course.gradingScale,
-    term: group.term.name,
     marks: group.marks,
     average: weightedAverage(group.marks),
     finalGrade: group.finalGrades[0]?.value ?? null,
@@ -138,33 +197,42 @@ export async function getRecentMarks(limit: number) {
 
 // ---------- Attendance ----------
 
-export function attendanceRate(statuses: AttendanceStatus[]) {
-  const counted = statuses.filter((s) => s !== "excused");
-  if (counted.length === 0) return null;
-  return counted.filter((s) => s === "present" || s === "late").length / counted.length;
-}
-
-export async function getAttendanceByCourse() {
+export async function getAttendanceByCourse(termId: string) {
   const student = await getCurrentStudent();
-  const enrollments = await db.enrollment.findMany({
-    where: { studentId: student.id },
-    include: { group: { include: { course: { select: { title: true } } } } },
-  });
+  const [enrollments, settings] = await Promise.all([
+    db.enrollment.findMany({
+      where: { studentId: student.id, group: { termId } },
+      include: { group: { include: { course: { select: { title: true } } } } },
+      orderBy: { group: { course: { title: "asc" } } },
+    }),
+    getSchoolSettings(),
+  ]);
   const records = await db.attendance.findMany({
-    where: { studentId: student.id },
+    where: { studentId: student.id, lesson: { group: { termId } } },
     include: { lesson: { select: { startsAt: true, topic: true, groupId: true } } },
     orderBy: { lesson: { startsAt: "desc" } },
   });
-  return enrollments.map(({ group }) => {
+  const courses = enrollments.map(({ group }) => {
     const rows = records.filter((r) => r.lesson.groupId === group.id);
+    const rate = attendanceRate(rows.map((r) => r.status));
     return {
       groupId: group.id,
       course: group.course.title,
       groupName: group.name,
       records: rows,
-      rate: attendanceRate(rows.map((r) => r.status)),
+      rate,
+      level: attendanceLevel(rate, settings),
     };
   });
+  return { courses, settings };
+}
+
+// Courses in the current term whose attendance needs attention (for Today).
+export async function getAttendanceAlerts() {
+  const { term } = await resolveTerm(null);
+  if (!term) return null;
+  const { courses, settings } = await getAttendanceByCourse(term.id);
+  return { alerts: courses.filter(needsAttention), settings };
 }
 
 // ---------- Notes & to-dos ----------
@@ -196,6 +264,17 @@ export async function getTodos() {
 }
 
 // ---------- Notifications ----------
+
+export async function getNotificationPreferences() {
+  const student = await getCurrentStudent();
+  const rows = await db.notificationPreference.findMany({ where: { userId: student.id } });
+  return Object.fromEntries(
+    NOTIFICATION_TYPES.map((type) => {
+      const row = rows.find((r) => r.type === type);
+      return [type, { email: row?.email ?? EMAIL_DEFAULTS[type], push: row?.push ?? PUSH_DEFAULTS[type] }];
+    }),
+  ) as Record<NotificationType, { email: boolean; push: boolean }>;
+}
 
 export async function getNotifications() {
   const student = await getCurrentStudent();

@@ -7,6 +7,9 @@ import { Card, PageTitle, Skeleton } from "@/components/ui";
 import { logout, logoutEverywhere, updateLocale } from "@/app/actions";
 import { PasswordForm } from "@/components/password-form";
 import { TimezoneForm } from "./timezone-form";
+import { NotificationSettings } from "./notification-settings";
+import { getNotificationPreferences } from "@/lib/data";
+import { InstallPrompt } from "@/components/pwa/install-prompt";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getI18n();
@@ -22,7 +25,7 @@ export default function ProfilePage() {
 }
 
 async function Profile() {
-  const [{ locale, t }, student] = await Promise.all([getI18n(), getCurrentStudent()]);
+  const [{ locale, t }, student, notificationPrefs] = await Promise.all([getI18n(), getCurrentStudent(), getNotificationPreferences()]);
   const timezones = Intl.supportedValuesOf("timeZone");
 
   return (
@@ -59,6 +62,16 @@ async function Profile() {
           ok={t.ok}
         />
       </Card>
+      <Card className="mb-4">
+        <NotificationSettings
+          current={notificationPrefs}
+          typeLabels={t.notifications.type}
+          labels={t.pwa}
+          saveLabels={{ save: t.common.save, saving: t.common.saving }}
+          ok={t.ok}
+        />
+      </Card>
+      <InstallPrompt mode="card" labels={t.pwa} />
       <Card className="mb-4">
         <h2 className="mb-3 text-sm font-semibold">{t.password.changeTitle}</h2>
         <PasswordForm mode="change" labels={t.password} errors={t.errors} ok={t.ok} />
