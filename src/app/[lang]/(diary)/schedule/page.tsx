@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { getCurrentStudent } from "@/lib/auth";
@@ -19,7 +18,7 @@ import {
 import { getI18n } from "@/i18n";
 import { localePath, type Locale } from "@/i18n/config";
 import { LessonCard } from "@/components/lesson-card";
-import { Empty, Skeleton } from "@/components/ui";
+import { Empty } from "@/components/ui";
 import { ChevronLeft, ChevronRight } from "@/components/icons";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -27,12 +26,12 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t.schedule.title };
 }
 
+// Data is ready in tens of milliseconds; waiting for it beats flashing a skeleton
+// (React holds streamed sections back ~300 ms, which delayed the real content).
+export const instant = false;
+
 export default function SchedulePage({ searchParams }: PageProps<"/[lang]/schedule">) {
-  return (
-    <Suspense fallback={<Skeleton rows={5} />}>
-      <Schedule searchParams={searchParams} />
-    </Suspense>
-  );
+  return <Schedule searchParams={searchParams} />;
 }
 
 function groupByDay(lessons: LessonWithDetails[], timeZone: string) {
@@ -94,7 +93,7 @@ async function Schedule({ searchParams }: Pick<PageProps<"/[lang]/schedule">, "s
       </div>
 
       {view === "week" ? (
-        <div className="space-y-5">
+        <div className="grid gap-5 lg:grid-cols-2">
           {Array.from({ length: 7 }, (_, i) => addDays(first, i)).map((key) => {
             const dayLessons = byDay.get(key) ?? [];
             return (

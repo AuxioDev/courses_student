@@ -70,6 +70,16 @@ export async function readObject(key: string): Promise<ReadableStream<Uint8Array
   }
 }
 
+// The first bytes of a stored object, for checking what it really is.
+export async function readObjectStart(key: string, length = 512) {
+  const stream = await readObject(key);
+  if (!stream) return null;
+  const reader = stream.getReader();
+  const { value } = await reader.read();
+  await reader.cancel();
+  return (value ?? new Uint8Array()).subarray(0, length);
+}
+
 export async function deleteObject(key: string) {
   if (storageDriver() === "blob") await del(key);
   else await rm(localPath(key), { force: true });

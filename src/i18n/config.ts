@@ -5,12 +5,6 @@ export type Locale = (typeof locales)[number];
 export const defaultLocale: Locale = "az";
 export const LOCALE_COOKIE = "cs_locale";
 
-export const localeNames: Record<Locale, string> = {
-  az: "Azərbaycanca",
-  en: "English",
-  ru: "Русский",
-};
-
 // BCP 47 tags passed to Intl formatters.
 export const intlLocale: Record<Locale, string> = { az: "az", en: "en-GB", ru: "ru" };
 
@@ -29,6 +23,11 @@ export function matchLocale(acceptLanguage: string | null): Locale | null {
     })
     .sort((a, b) => b.q - a.q);
   return ranked.find((r) => hasLocale(r.lang))?.lang as Locale | null ?? null;
+}
+
+// A path inside this site, safe to redirect to. Rejects //host and backslash tricks.
+export function isInternalPath(path: unknown): path is string {
+  return typeof path === "string" && path.length <= 500 && /^\/(?!\/)/.test(path) && !path.includes("\\");
 }
 
 export function localePath(locale: Locale, path: string) {

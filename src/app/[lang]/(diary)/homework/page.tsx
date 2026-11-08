@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { getCurrentStudent } from "@/lib/auth";
@@ -6,7 +5,7 @@ import { getHomeworkList, type HomeworkItem } from "@/lib/data";
 import { formatDateTime, relativeDue } from "@/lib/dates";
 import { fmt, getI18n } from "@/i18n";
 import { localePath } from "@/i18n/config";
-import { Badge, Card, Empty, PageTitle, Skeleton } from "@/components/ui";
+import { Badge, Card, Empty, PageTitle } from "@/components/ui";
 import { formatScore, homeworkStateTone } from "@/components/status";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -21,12 +20,12 @@ const tabs = [
   { id: "overdue", match: (hw: HomeworkItem) => hw.state === "overdue" },
 ] as const;
 
+// Data is ready in tens of milliseconds; waiting for it beats flashing a skeleton
+// (React holds streamed sections back ~300 ms, which delayed the real content).
+export const instant = false;
+
 export default function HomeworkPage({ searchParams }: PageProps<"/[lang]/homework">) {
-  return (
-    <Suspense fallback={<Skeleton rows={4} />}>
-      <HomeworkList searchParams={searchParams} />
-    </Suspense>
-  );
+  return <HomeworkList searchParams={searchParams} />;
 }
 
 async function HomeworkList({ searchParams }: Pick<PageProps<"/[lang]/homework">, "searchParams">) {
@@ -64,7 +63,7 @@ async function HomeworkList({ searchParams }: Pick<PageProps<"/[lang]/homework">
       {items.length === 0 ? (
         <Empty>{t.common.nothingHere}</Empty>
       ) : (
-        <ul className="space-y-2">
+        <ul className="grid gap-2 sm:grid-cols-2">
           {items.map((hw) => (
             <li key={hw.id}>
               <Link href={localePath(locale, `/homework/${hw.id}`)} className="block">
@@ -85,7 +84,7 @@ async function HomeworkList({ searchParams }: Pick<PageProps<"/[lang]/homework">
                   </div>
                   <p className="mt-2 text-xs text-muted">
                     {fmt(t.homework.due, { date: formatDateTime(hw.dueAt, student.timezone, locale) })}
-                    {(hw.state === "todo" || hw.state === "returned" || hw.state === "overdue") &&
+                    {(hw.state === "todo" || hw.state === "overdue") &&
                       ` · ${relativeDue(hw.dueAt, now, t.homework.dueRelative)}`}
                   </p>
                 </Card>

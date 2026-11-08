@@ -68,17 +68,24 @@ enum NotificationType {
 }
 
 model User {
-  id                 String   @id @default(cuid())
-  name               String
-  email              String   @unique
-  passwordHash       String   @map("password_hash")
-  role               Role
-  timezone           String   @default("Asia/Baku")
-  locale             String? // "az" | "en" | "ru"; null until the user picks or first logs in
-  active             Boolean  @default(true)
-  sessionVersion     Int      @default(0) @map("session_version") // bump to sign out every device
-  mustChangePassword Boolean  @default(false) @map("must_change_password") // set with a temporary password
-  createdAt          DateTime @default(now()) @map("created_at")
+  id                  String    @id @default(cuid())
+  name                String
+  email               String    @unique
+  passwordHash        String    @map("password_hash")
+  role                Role
+  timezone            String    @default("Asia/Baku")
+  locale              String? // "az" | "en" | "ru"; null until the user picks or first logs in
+  active              Boolean   @default(true)
+  sessionVersion      Int       @default(0) @map("session_version") // bump to sign out every device
+  mustChangePassword  Boolean   @default(false) @map("must_change_password") // set with a temporary password
+  createdAt           DateTime  @default(now()) @map("created_at")
+  // Privacy: which notice was accepted, and the deletion / retention timeline.
+  privacyVersion      Int?      @map("privacy_version")
+  privacyAcceptedAt   DateTime? @map("privacy_accepted_at")
+  deactivatedAt       DateTime? @map("deactivated_at")
+  deletionRequestedAt DateTime? @map("deletion_requested_at")
+  deletionApprovedAt  DateTime? @map("deletion_approved_at")
+  privateDataErasedAt DateTime? @map("private_data_erased_at")
 
   teachingGroups          Group[]                  @relation("GroupTeacher")
   taughtLessons           Lesson[]                 @relation("LessonTeacher")

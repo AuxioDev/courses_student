@@ -53,8 +53,11 @@ export function homeworkState(dueAt: Date, status: SubmissionStatus | undefined,
 export async function getHomeworkList() {
   const student = await getCurrentStudent();
   const groupIds = await activeGroupIds(student.id);
+  // Only this term: homework from finished terms would otherwise stay "overdue" forever.
+  const { term } = await resolveTerm(null);
+  if (!term) return [];
   const rows = await db.homework.findMany({
-    where: { groupId: { in: groupIds } },
+    where: { groupId: { in: groupIds }, group: { termId: term.id } },
     include: {
       group: { select: { name: true, course: { select: { title: true } } } },
       submissions: {
@@ -81,7 +84,14 @@ export async function getHomework(id: string) {
   const hw = await db.homework.findFirst({
     where: { id, groupId: { in: groupIds } },
     include: {
-      group: { select: { name: true, course: { select: { title: true } }, teacher: { select: { name: true } } } },
+      group: {
+        select: {
+          name: true,
+          course: { select: { title: true } },
+          teacher: { select: { name: true } },
+          term: { select: { locked: true } },
+        },
+      },
       lesson: { select: { startsAt: true, topic: true } },
       submissions: {
         where: { studentId: student.id },

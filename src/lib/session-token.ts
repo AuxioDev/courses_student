@@ -38,7 +38,9 @@ export async function verifySession(token: string | undefined) {
 
 export const sessionCookieOptions = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
+  // Follows the real protocol: browsers drop Secure cookies on plain http, which
+  // would make a local production build log students straight back out.
+  secure: !!process.env.VERCEL || (process.env.APP_URL ?? "").startsWith("https://"),
   sameSite: "lax" as const,
   path: "/",
   maxAge: SESSION_MAX_AGE_SECONDS,

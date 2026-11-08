@@ -1,11 +1,10 @@
-import { Suspense } from "react";
 import type { Metadata } from "next";
 import { getCurrentStudent } from "@/lib/auth";
 import { getAttendanceByCourse, resolveTerm } from "@/lib/data";
 import { formatDateTime } from "@/lib/dates";
 import { needsAttention } from "@/lib/grading";
 import { fmt, getI18n } from "@/i18n";
-import { Badge, Empty, PageTitle, Skeleton } from "@/components/ui";
+import { Badge, Empty, PageTitle } from "@/components/ui";
 import { attendanceTone } from "@/components/status";
 import { TermSwitcher } from "@/components/term-switcher";
 import { AttendanceAlert } from "@/components/attendance-alert";
@@ -17,12 +16,12 @@ export async function generateMetadata(): Promise<Metadata> {
 
 const levelText = { ok: "text-good", warn: "text-warn", risk: "text-bad" } as const;
 
+// Data is ready in tens of milliseconds; waiting for it beats flashing a skeleton
+// (React holds streamed sections back ~300 ms, which delayed the real content).
+export const instant = false;
+
 export default function AttendancePage({ searchParams }: PageProps<"/[lang]/attendance">) {
-  return (
-    <Suspense fallback={<Skeleton rows={3} />}>
-      <Attendance searchParams={searchParams} />
-    </Suspense>
-  );
+  return <Attendance searchParams={searchParams} />;
 }
 
 async function Attendance({ searchParams }: Pick<PageProps<"/[lang]/attendance">, "searchParams">) {
@@ -58,7 +57,7 @@ async function Attendance({ searchParams }: Pick<PageProps<"/[lang]/attendance">
         </div>
       )}
       {courses.length === 0 && <Empty>{t.marks.noCourses}</Empty>}
-      <div className="space-y-4">
+      <div className="grid items-start gap-4 lg:grid-cols-2">
         {courses.map((c) => (
           <details key={c.groupId} className="rounded-2xl border border-line bg-surface">
             <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4">

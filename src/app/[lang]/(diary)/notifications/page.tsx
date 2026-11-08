@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { getCurrentStudent } from "@/lib/auth";
@@ -6,7 +5,7 @@ import { getNotifications } from "@/lib/data";
 import { formatDateTime } from "@/lib/dates";
 import { getI18n } from "@/i18n";
 import { notificationHref, renderNotification } from "@/lib/notifications/types";
-import { Empty, PageTitle, Skeleton } from "@/components/ui";
+import { Empty, PageTitle } from "@/components/ui";
 import { markAllNotificationsRead } from "@/app/actions";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -14,12 +13,12 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t.notifications.title };
 }
 
+// Data is ready in tens of milliseconds; waiting for it beats flashing a skeleton
+// (React holds streamed sections back ~300 ms, which delayed the real content).
+export const instant = false;
+
 export default function NotificationsPage() {
-  return (
-    <Suspense fallback={<Skeleton rows={4} />}>
-      <Notifications />
-    </Suspense>
-  );
+  return <Notifications />;
 }
 
 async function Notifications() {
@@ -43,7 +42,7 @@ async function Notifications() {
       {items.length === 0 ? (
         <Empty>{t.notifications.none}</Empty>
       ) : (
-        <ul className="overflow-hidden rounded-2xl border border-line bg-surface">
+        <ul className="max-w-2xl overflow-hidden rounded-2xl border border-line bg-surface">
           {items.map((n) => {
             const rendered = renderNotification(n.type, n.payload, t, locale, student.timezone);
             const href = notificationHref(locale, rendered);
@@ -54,7 +53,7 @@ async function Notifications() {
                   aria-label={n.readAt ? undefined : t.notifications.unread}
                 />
                 <div className="min-w-0">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted">{t.notifications.type[n.type]}</p>
+                  <p className="text-xs font-semibold text-muted">{t.notifications.type[n.type]}</p>
                   <p className={`text-sm ${n.readAt ? "" : "font-semibold"}`}>{rendered.title}</p>
                   {rendered.body && <p className="text-sm text-muted">{rendered.body}</p>}
                   <p className="mt-0.5 text-xs text-muted">{formatDateTime(n.createdAt, student.timezone, locale)}</p>

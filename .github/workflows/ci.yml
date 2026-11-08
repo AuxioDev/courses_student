@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: courses_student
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    # Throwaway values for this job only. Real secrets are never needed here.
+    env:
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/courses_student?schema=public
+      SESSION_SECRET: ci-only-not-a-real-secret-0123456789abcdef
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      # Also generates the Prisma client (postinstall).
+      - run: npm ci
+
+      - name: Apply every migration to an empty database
+        run: npx prisma migrate deploy
+
+      - name: Schema and migrations match
+        run: npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code
+
+      - name: Seed the demo data
+        run: npm run db:seed
+
+      - name: Generate route types
+        run: npx next typegen
+
+      - run: npm run typecheck
+
+      - run: npm run lint
+
+      - run: npm run build
+
+      - name: Known vulnerabilities in production dependencies
+        run: npm audit --omit=dev

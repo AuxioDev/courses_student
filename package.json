@@ -13,7 +13,11 @@
     "db:seed": "tsx prisma/seed.ts",
     "postinstall": "prisma generate",
     "auth:reset-link": "tsx scripts/reset-link.ts",
-    "auth:temp-password": "tsx scripts/temp-password.ts"
+    "auth:temp-password": "tsx scripts/temp-password.ts",
+    "privacy:requests": "tsx scripts/approve-deletion.ts",
+    "privacy:approve-deletion": "tsx scripts/approve-deletion.ts",
+    "vercel-build": "node scripts/vercel-build.mjs && next build",
+    "students:import": "tsx scripts/import-students.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.1",
@@ -48,5 +52,8 @@
     "@vercel/cli-config": {
       "zod": "^4.6.6"
     }
+  },
+  "engines": {
+    "node": "24.x"
   }
 }

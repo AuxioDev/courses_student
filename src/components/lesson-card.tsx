@@ -26,7 +26,7 @@ export async function LessonCard({ lesson, timeZone, now }: { lesson: LessonWith
         <div className={cancelled ? "line-through" : "font-semibold"}>{formatTime(lesson.startsAt, timeZone)}</div>
         <div className="text-muted">{formatTime(lesson.endsAt, timeZone)}</div>
       </div>
-      <div className="min-w-0 flex-1 border-l border-line pl-3">
+      <div className={`min-w-0 flex-1 border-l-2 pl-3 ${cancelled ? "border-line" : "border-accent"}`}>
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="font-semibold">{lesson.group.course.title}</span>
           {statusTone && (lesson.status === "moved" || lesson.status === "cancelled") && (

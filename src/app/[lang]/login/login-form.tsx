@@ -1,13 +1,23 @@
 "use client";
 
-import { useActionState } from "react";
+import { Suspense, useActionState } from "react";
+import { useSearchParams } from "next/navigation";
 import type { Dictionary } from "@/i18n/dictionaries/en";
 import { login } from "@/app/actions";
+
+// The page to return to after login. In its own boundary so the page stays prerendered.
+function NextField() {
+  const next = useSearchParams().get("next");
+  return next ? <input type="hidden" name="next" value={next} /> : null;
+}
 
 export function LoginForm({ labels, errors }: { labels: Dictionary["login"]; errors: Dictionary["errors"] }) {
   const [state, action, pending] = useActionState(login, undefined);
   return (
     <form action={action} className="space-y-3">
+      <Suspense>
+        <NextField />
+      </Suspense>
       <label className="block">
         <span className="mb-1 block text-sm font-medium">{labels.email}</span>
         <input name="email" type="email" autoComplete="email" required defaultValue={state?.email} className="field" />

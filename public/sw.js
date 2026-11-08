@@ -5,8 +5,8 @@
 // - Homework files, API calls and every other page are never cached.
 // - Push: shows notifications sent by the server and opens the right page.
 
-const PAGES = "diary-pages-v1";
-const STATIC = "diary-static-v1";
+const PAGES = "diary-pages-v2";
+const STATIC = "diary-static-v2";
 const OFFLINE_URL = "/offline.html";
 // Saved at install so the offline page can show them without a network.
 const PRECACHE = [OFFLINE_URL, "/icons/icon-192.png", "/icons/badge-96.png"];

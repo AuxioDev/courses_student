@@ -11,9 +11,12 @@ const geistSans = Geist({
   subsets: ["latin", "cyrillic"],
 });
 
+// Only used for numbers (times, scores), so it isn't worth delaying the first
+// paint on slow connections by preloading it.
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin", "cyrillic"],
+  preload: false,
 });
 
 export function generateStaticParams() {
@@ -36,8 +39,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f7f4ee" },
-    { media: "(prefers-color-scheme: dark)", color: "#14161b" },
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#17232d" },
   ],
 };
 

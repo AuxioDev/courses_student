@@ -48,3 +48,6 @@ next-env.d.ts
 
 # dev email output
 /.emails
+
+# temporary passwords from the student import
+/.imports

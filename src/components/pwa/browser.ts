@@ -1,6 +1,6 @@
 // Small browser checks shared by the PWA components. Client-only.
 
-export const PAGES_CACHE = "diary-pages-v1";
+export const PAGES_CACHE = "diary-pages-v2";
 
 export function isStandalone() {
   return (

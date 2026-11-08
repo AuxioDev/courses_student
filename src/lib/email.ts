@@ -11,6 +11,9 @@ export const APP_URL = (process.env.APP_URL ?? "http://localhost:3000").replace(
 
 export async function sendEmail(email: Email): Promise<boolean> {
   const key = process.env.RESEND_API_KEY;
+  // Demo accounts use the reserved example.com domain. Sending there only bounces,
+  // which harms the sender's reputation.
+  if (key && email.to.toLowerCase().endsWith("@example.com")) return false;
   if (!key) {
     if (process.env.VERCEL) {
       console.warn(`[email] RESEND_API_KEY is not set; not sending "${email.subject}"`);
@@ -36,7 +39,8 @@ export async function sendEmail(email: Email): Promise<boolean> {
     }),
   });
   if (!res.ok) {
-    console.error(`[email] Resend failed (${res.status}): ${await res.text().catch(() => "")}`);
+    // Only the status: Resend's error text can echo the recipient's address.
+    console.error(`[email] Resend failed (${res.status})`);
     return false;
   }
   return true;
@@ -58,16 +62,16 @@ export function emailLayout(opts: {
 }) {
   const e = { ...opts, ...Object.fromEntries(Object.entries(opts).map(([k, v]) => [k, escape(v)])) };
   const html = `<!doctype html>
-<html lang="${e.lang}"><body style="margin:0;background:#f7f4ee;font-family:Arial,Helvetica,sans-serif;color:#1d232f">
+<html lang="${e.lang}"><body style="margin:0;background:#eef3f7;font-family:Arial,Helvetica,sans-serif;color:#23333f">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:24px 12px">
-<table role="presentation" width="100%" style="max-width:480px;background:#ffffff;border:1px solid #e4ded2;border-radius:16px" cellpadding="0" cellspacing="0">
+<table role="presentation" width="100%" style="max-width:480px;background:#ffffff;border:1px solid #d5dfe7;border-radius:16px" cellpadding="0" cellspacing="0">
 <tr><td style="padding:24px">
-<p style="margin:0 0 16px;font-size:14px;color:#6b7280">${e.greeting}</p>
+<p style="margin:0 0 16px;font-size:14px;color:#566a7a">${e.greeting}</p>
 <h1 style="margin:0 0 8px;font-size:20px;line-height:1.3">${e.title}</h1>
 <p style="margin:0 0 20px;font-size:15px;line-height:1.5">${e.body}</p>
-<a href="${e.buttonUrl}" style="display:inline-block;background:#2f4fb5;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 18px;border-radius:12px;font-size:14px">${e.buttonLabel}</a>
+<a href="${e.buttonUrl}" style="display:inline-block;background:#16794c;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 18px;border-radius:12px;font-size:14px">${e.buttonLabel}</a>
 </td></tr></table>
-<p style="max-width:480px;margin:16px auto 0;font-size:12px;line-height:1.5;color:#6b7280">${e.footer}</p>
+<p style="max-width:480px;margin:16px auto 0;font-size:12px;line-height:1.5;color:#566a7a">${e.footer}</p>
 </td></tr></table></body></html>`;
   const text = `${opts.greeting}\n\n${opts.title}\n${opts.body}\n\n${opts.buttonLabel}: ${opts.buttonUrl}\n\n${opts.footer}`;
   return { html, text };

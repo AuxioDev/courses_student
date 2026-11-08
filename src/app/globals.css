@@ -1,41 +1,44 @@
 @import "tailwindcss";
 
-/* Diary palette: warm paper with ink-blue accents. */
+/* White pages, blue-gray structure, green for actions. Amber and red are kept only
+   for warnings and overdue work, where the colour carries meaning. */
 :root {
-  --bg: #f7f4ee;
+  color-scheme: light;
+  --bg: #ffffff;
   --surface: #ffffff;
-  --surface-2: #f1ede4;
-  --ink: #1d232f;
-  --muted: #6b7280;
-  --line: #e4ded2;
-  --accent: #2f4fb5;
+  --surface-2: #eef3f7;
+  --ink: #23333f;
+  --muted: #566a7a;
+  --line: #d5dfe7;
+  --accent: #16794c;
   --accent-ink: #ffffff;
-  --accent-soft: #e5eafb;
-  --good: #1f7a4d;
-  --good-soft: #e1f3e9;
-  --warn: #a35d00;
-  --warn-soft: #fbefd9;
-  --bad: #b42335;
-  --bad-soft: #fbe3e6;
+  --accent-soft: #e2f3ea;
+  --good: #16794c;
+  --good-soft: #e2f3ea;
+  --warn: #8f5500;
+  --warn-soft: #fbf0dc;
+  --bad: #b3261e;
+  --bad-soft: #fbe6e4;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #14161b;
-    --surface: #1c1f26;
-    --surface-2: #23272f;
-    --ink: #e9e6df;
-    --muted: #9aa0ab;
-    --line: #2e323b;
-    --accent: #8ea6ff;
-    --accent-ink: #10131a;
-    --accent-soft: #252d47;
-    --good: #6fd29e;
-    --good-soft: #1b3027;
+    color-scheme: dark;
+    --bg: #17232d;
+    --surface: #1f2e3a;
+    --surface-2: #293b49;
+    --ink: #eaf0f5;
+    --muted: #a3b5c3;
+    --line: #354a5a;
+    --accent: #52c78f;
+    --accent-ink: #0d2a1e;
+    --accent-soft: #1f4234;
+    --good: #52c78f;
+    --good-soft: #1f4234;
     --warn: #f0b65a;
-    --warn-soft: #362b17;
-    --bad: #ff8a98;
-    --bad-soft: #3a1f24;
+    --warn-soft: #40331c;
+    --bad: #ff9a90;
+    --bad-soft: #4a2a2b;
   }
 }
 
@@ -63,6 +66,20 @@ body {
   background: var(--bg);
   color: var(--ink);
   -webkit-tap-highlight-color: transparent;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 
 .field {

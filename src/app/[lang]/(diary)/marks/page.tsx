@@ -1,11 +1,10 @@
-import { Suspense } from "react";
 import type { Metadata } from "next";
 import { getCurrentStudent } from "@/lib/auth";
 import { getMarksByCourse, resolveTerm } from "@/lib/data";
 import { formatDayKey, dayKey } from "@/lib/dates";
 import { averageBand, formatAverage } from "@/lib/grading";
 import { fmt, getI18n, plural } from "@/i18n";
-import { Card, Empty, PageTitle, Skeleton } from "@/components/ui";
+import { Card, Empty, PageTitle } from "@/components/ui";
 import { formatScore } from "@/components/status";
 import { TermSwitcher } from "@/components/term-switcher";
 
@@ -16,12 +15,12 @@ export async function generateMetadata(): Promise<Metadata> {
 
 const bandText = { good: "text-good", warn: "text-warn", bad: "text-bad" } as const;
 
+// Data is ready in tens of milliseconds; waiting for it beats flashing a skeleton
+// (React holds streamed sections back ~300 ms, which delayed the real content).
+export const instant = false;
+
 export default function MarksPage({ searchParams }: PageProps<"/[lang]/marks">) {
-  return (
-    <Suspense fallback={<Skeleton rows={3} />}>
-      <Marks searchParams={searchParams} />
-    </Suspense>
-  );
+  return <Marks searchParams={searchParams} />;
 }
 
 async function Marks({ searchParams }: Pick<PageProps<"/[lang]/marks">, "searchParams">) {
@@ -49,7 +48,7 @@ async function Marks({ searchParams }: Pick<PageProps<"/[lang]/marks">, "searchP
         currentLabel={t.marks.currentTerm}
       />
       {courses.length === 0 && <Empty>{t.marks.noCourses}</Empty>}
-      <div className="space-y-4">
+      <div className="grid items-start gap-4 lg:grid-cols-2">
         {courses.map((c) => (
           <details key={c.groupId} className="group rounded-2xl border border-line bg-surface" open={courses.length === 1}>
             <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4">

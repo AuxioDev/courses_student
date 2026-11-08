@@ -5,6 +5,7 @@ import { db } from "./db";
 import { getSession } from "./session";
 import { getRequestLocale } from "@/i18n";
 import { hasLocale, localePath, type Locale } from "@/i18n/config";
+import { PRIVACY_VERSION } from "./privacy";
 
 export type Student = {
   id: string;
@@ -14,6 +15,8 @@ export type Student = {
   locale: Locale | null;
   sessionVersion: number;
   mustChangePassword: boolean;
+  privacyAccepted: boolean;
+  deletionRequestedAt: Date | null;
 };
 
 async function goTo(path: string): Promise<never> {
@@ -38,6 +41,8 @@ const loadStudent = cache(async (): Promise<Student | null> => {
       active: true,
       sessionVersion: true,
       mustChangePassword: true,
+      privacyVersion: true,
+      deletionRequestedAt: true,
     },
   });
   if (!user || user.role !== "student" || !user.active || user.sessionVersion !== session.v) return null;
@@ -50,6 +55,8 @@ const loadStudent = cache(async (): Promise<Student | null> => {
     locale: hasLocale(user.locale) ? user.locale : null,
     sessionVersion: user.sessionVersion,
     mustChangePassword: user.mustChangePassword,
+    privacyAccepted: user.privacyVersion === PRIVACY_VERSION,
+    deletionRequestedAt: user.deletionRequestedAt,
   };
 });
 
@@ -57,20 +64,29 @@ const loadStudent = cache(async (): Promise<Student | null> => {
 // their own before they can use anything else.
 export async function getCurrentStudent(): Promise<Student> {
   const student = await loadStudent();
-  if (!student) return goTo("/login");
+  if (!student) return goTo("/login?expired=1");
   if (student.mustChangePassword) return goTo("/change-password");
+  if (!student.privacyAccepted) return goTo("/privacy/accept");
   return student;
 }
 
 // For Route Handlers, which answer 401 instead of redirecting.
 export async function getStudentOrNull(): Promise<Student | null> {
   const student = await loadStudent();
-  return student && !student.mustChangePassword ? student : null;
+  return student && !student.mustChangePassword && student.privacyAccepted ? student : null;
+}
+
+// Only for the page and action that accept the privacy notice.
+export async function getStudentForConsent(): Promise<Student> {
+  const student = await loadStudent();
+  if (!student) return goTo("/login?expired=1");
+  if (student.mustChangePassword) return goTo("/change-password");
+  return student;
 }
 
 // Only for the change-password page and action.
 export async function getStudentForPasswordChange(): Promise<Student> {
   const student = await loadStudent();
-  if (!student) return goTo("/login");
+  if (!student) return goTo("/login?expired=1");
   return student;
 }

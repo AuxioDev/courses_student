@@ -4,25 +4,32 @@ import { z } from "zod";
 import { redirect } from "next/navigation";
 import { refresh } from "next/cache";
 import { cookies } from "next/headers";
+import { Prisma } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
 import { createSession, deleteSession } from "@/lib/session";
-import { getCurrentStudent, getStudentForPasswordChange } from "@/lib/auth";
+import { getCurrentStudent, getStudentForConsent, getStudentForPasswordChange } from "@/lib/auth";
+import { PRIVACY_VERSION } from "@/lib/privacy";
 import { hashPassword, hashToken, newPasswordSchema, verifyPassword } from "@/lib/passwords";
 import { clientIp, isLoginBlocked, recordLoginAttempt } from "@/lib/rate-limit";
 import { sendResetLink } from "@/lib/password-reset";
+import { isAllowedPushEndpoint } from "@/lib/push";
 import { NOTIFICATION_TYPES } from "@/lib/notifications/types";
-import { deleteObject, isValidKey, objectSize } from "@/lib/storage";
-import { MAX_FILES_PER_HOMEWORK, contentTypeFor, extensionOf, type UploadErrorCode } from "@/lib/upload-policy";
+import { deleteObject, isValidKey, objectSize, readObjectStart } from "@/lib/storage";
+import {
+  MAX_FILES_PER_HOMEWORK,
+  contentMatchesExtension,
+  contentTypeFor,
+  extensionOf,
+  type UploadErrorCode,
+} from "@/lib/upload-policy";
 import { checkCanUpload, checkNewFile, cleanFileName, keyBelongsTo, latestAttempt } from "@/lib/uploads";
 import { isDayKey } from "@/lib/dates";
 import { getRequestLocale } from "@/i18n";
-import { hasLocale, LOCALE_COOKIE, localePath } from "@/i18n/config";
+import { hasLocale, isInternalPath, LOCALE_COOKIE, localePath } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/dictionaries/en";
 
 // Messages are keys into the dictionary so the client can show them in the current language.
-export type FormState =
-  | { error?: keyof Dictionary["errors"]; ok?: keyof Dictionary["ok"]; email?: string }
-  | undefined;
+export type FormState = { error?: keyof Dictionary["errors"]; ok?: keyof Dictionary["ok"]; email?: string } | undefined;
 
 // ---------- Auth ----------
 
@@ -58,7 +65,8 @@ export async function login(_prev: FormState, formData: FormData): Promise<FormS
   const current = await getRequestLocale();
   const locale = hasLocale(user.locale) ? user.locale : current;
   if (!user.locale) await db.user.update({ where: { id: user.id }, data: { locale } });
-  redirect(localePath(locale, user.mustChangePassword ? "/change-password" : "/"));
+  const next = formData.get("next");
+  redirect(localePath(locale, user.mustChangePassword ? "/change-password" : isInternalPath(next) ? next : "/"));
 }
 
 export async function logout() {
@@ -78,7 +86,9 @@ export async function logoutEverywhere() {
   redirect(localePath(await getRequestLocale(), "/login"));
 }
 
-function readNewPassword(formData: FormData): { password: string } | { error: "passwordTooShort" | "passwordMismatch" } {
+function readNewPassword(
+  formData: FormData,
+): { password: string } | { error: "passwordTooShort" | "passwordMismatch" } {
   const password = String(formData.get("newPassword") ?? "");
   if (!newPasswordSchema.safeParse(password).success) return { error: "passwordTooShort" };
   if (password !== formData.get("confirmPassword")) return { error: "passwordMismatch" };
@@ -87,10 +97,15 @@ function readNewPassword(formData: FormData): { password: string } | { error: "p
 
 // Sets a new password, signs out every other device and keeps this one signed in.
 async function setPassword(userId: string, password: string) {
-  const user = await db.user.update({
-    where: { id: userId },
-    data: { passwordHash: await hashPassword(password), mustChangePassword: false, sessionVersion: { increment: 1 } },
-  });
+  const passwordHash = await hashPassword(password);
+  const [user] = await db.$transaction([
+    db.user.update({
+      where: { id: userId },
+      data: { passwordHash, mustChangePassword: false, sessionVersion: { increment: 1 } },
+    }),
+    // Any other reset link still in someone's inbox stops working.
+    db.authToken.deleteMany({ where: { userId, type: "reset" } }),
+  ]);
   await createSession({ userId: user.id, role: user.role, v: user.sessionVersion });
 }
 
@@ -140,7 +155,10 @@ export async function resetPassword(_prev: FormState, formData: FormData): Promi
   if ("error" in next) return { error: next.error };
 
   // Claim the token first so the same link can't be used twice at once.
-  const claimed = await db.authToken.updateMany({ where: { id: record.id, usedAt: null }, data: { usedAt: new Date() } });
+  const claimed = await db.authToken.updateMany({
+    where: { id: record.id, usedAt: null },
+    data: { usedAt: new Date() },
+  });
   if (claimed.count === 0) return { error: "resetLinkInvalid" };
 
   await setPassword(record.userId, next.password);
@@ -180,7 +198,8 @@ export async function submitHomework(_prev: FormState, formData: FormData): Prom
     select: { status: true },
   });
   const previous = await latestAttempt(student.id, homeworkId);
-  const keptFiles = keepFiles && previous ? await db.submissionFile.findMany({ where: { attemptId: previous.id } }) : [];
+  const keptFiles =
+    keepFiles && previous ? await db.submissionFile.findMany({ where: { attemptId: previous.id } }) : [];
   const newFiles = await db.submissionFile.count({ where: { homeworkId, studentId: student.id, attemptId: null } });
   if (!content && links.length === 0 && newFiles + keptFiles.length === 0) return { error: "emptySubmission" };
   if (newFiles + keptFiles.length > MAX_FILES_PER_HOMEWORK) return { error: "tooManyFiles" };
@@ -191,34 +210,46 @@ export async function submitHomework(_prev: FormState, formData: FormData): Prom
   const late = existing?.status !== "returned" && now > homework.dueAt;
   const status = late ? "late" : "submitted";
 
-  await db.$transaction(async (tx) => {
-    const submission = await tx.submission.upsert({
-      where: { homeworkId_studentId: { homeworkId, studentId: student.id } },
-      create: { homeworkId, studentId: student.id, content, links, status, submittedAt: now },
-      update: { content, links, status, submittedAt: now, score: null, feedback: null },
-    });
-    const attempt = await tx.submissionAttempt.create({
-      data: { submissionId: submission.id, number: (previous?.number ?? 0) + 1, content, links, late, submittedAt: now },
-    });
-    // New uploads are handed in with this attempt; kept files are listed again.
-    await tx.submissionFile.updateMany({
-      where: { homeworkId, studentId: student.id, attemptId: null },
-      data: { attemptId: attempt.id },
-    });
-    if (keptFiles.length > 0) {
-      await tx.submissionFile.createMany({
-        data: keptFiles.map((f) => ({
-          homeworkId: f.homeworkId,
-          studentId: f.studentId,
-          name: f.name,
-          size: f.size,
-          contentType: f.contentType,
-          storageKey: f.storageKey,
-          attemptId: attempt.id,
-        })),
+  try {
+    await db.$transaction(async (tx) => {
+      const submission = await tx.submission.upsert({
+        where: { homeworkId_studentId: { homeworkId, studentId: student.id } },
+        create: { homeworkId, studentId: student.id, content, links, status, submittedAt: now },
+        update: { content, links, status, submittedAt: now, score: null, feedback: null },
       });
-    }
-  });
+      const attempt = await tx.submissionAttempt.create({
+        data: {
+          submissionId: submission.id,
+          number: (previous?.number ?? 0) + 1,
+          content,
+          links,
+          late,
+          submittedAt: now,
+        },
+      });
+      // New uploads are handed in with this attempt; kept files are listed again.
+      await tx.submissionFile.updateMany({
+        where: { homeworkId, studentId: student.id, attemptId: null },
+        data: { attemptId: attempt.id },
+      });
+      if (keptFiles.length > 0) {
+        await tx.submissionFile.createMany({
+          data: keptFiles.map((f) => ({
+            homeworkId: f.homeworkId,
+            studentId: f.studentId,
+            name: f.name,
+            size: f.size,
+            contentType: f.contentType,
+            storageKey: f.storageKey,
+            attemptId: attempt.id,
+          })),
+        });
+      }
+    });
+  } catch (e) {
+    // A double tap: the other request already created this attempt.
+    if (!(e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002")) throw e;
+  }
 
   refresh();
   return { ok: late ? "submittedLate" : "submitted" };
@@ -226,18 +257,31 @@ export async function submitHomework(_prev: FormState, formData: FormData): Prom
 
 // Step 2 of an upload (after the browser has stored the file): check what was
 // actually stored and record it. Anything that fails the checks is deleted again.
-export async function attachUpload(input: { homeworkId: string; key: string; name: string }): Promise<{ error?: UploadErrorCode }> {
+export async function attachUpload(input: {
+  homeworkId: string;
+  key: string;
+  name: string;
+}): Promise<{ error?: UploadErrorCode }> {
   const student = await getCurrentStudent();
   const { homeworkId, key } = input;
   const name = cleanFileName(String(input.name ?? ""));
   const contentType = contentTypeFor(name);
-  if (!isValidKey(key) || !keyBelongsTo(key, student.id, homeworkId) || !contentType || extensionOf(key) !== extensionOf(name)) {
+  if (
+    !isValidKey(key) ||
+    !keyBelongsTo(key, student.id, homeworkId) ||
+    !contentType ||
+    extensionOf(key) !== extensionOf(name)
+  ) {
     return { error: "uploadFailed" };
   }
 
   const size = await objectSize(key);
   if (size === null) return { error: "uploadFailed" };
-  const problem = await checkNewFile(student.id, homeworkId, name, size);
+  const start = await readObjectStart(key);
+  const problem =
+    !start || !contentMatchesExtension(name, start)
+      ? "fileType"
+      : await checkNewFile(student.id, homeworkId, name, size);
   if (problem) {
     await deleteObject(key);
     return { error: problem };
@@ -253,7 +297,9 @@ export async function attachUpload(input: { homeworkId: string; key: string; nam
 export async function removeUpload(fileId: string): Promise<{ error?: UploadErrorCode }> {
   const student = await getCurrentStudent();
   // Handed-in files belong to their attempt and can't be removed.
-  const file = await db.submissionFile.findFirst({ where: { id: String(fileId), studentId: student.id, attemptId: null } });
+  const file = await db.submissionFile.findFirst({
+    where: { id: String(fileId), studentId: student.id, attemptId: null },
+  });
   if (!file) return { error: "uploadFailed" };
   const problem = await checkCanUpload(student.id, file.homeworkId);
   if (problem) return { error: problem };
@@ -268,6 +314,10 @@ export async function removeUpload(fileId: string): Promise<{ error?: UploadErro
 
 // ---------- Notes ----------
 
+// Far above real use; they only stop a script from filling the database.
+const MAX_NOTES = 1000;
+const MAX_TODOS = 500;
+
 const noteSchema = z.object({
   date: z.string().refine(isDayKey),
   text: z.string().trim().min(1).max(5_000),
@@ -277,6 +327,7 @@ export async function addNote(formData: FormData) {
   const student = await getCurrentStudent();
   const parsed = noteSchema.safeParse({ date: formData.get("date"), text: formData.get("text") });
   if (!parsed.success) return;
+  if ((await db.studentNote.count({ where: { studentId: student.id } })) >= MAX_NOTES) return;
   await db.studentNote.create({
     data: { studentId: student.id, date: new Date(`${parsed.data.date}T00:00:00Z`), text: parsed.data.text },
   });
@@ -307,6 +358,7 @@ export async function addTodo(formData: FormData) {
     dueAt: formData.get("dueAt") || undefined,
   });
   if (!parsed.success) return;
+  if ((await db.studentTodo.count({ where: { studentId: student.id } })) >= MAX_TODOS) return;
   await db.studentTodo.create({ data: { studentId: student.id, ...parsed.data } });
   refresh();
 }
@@ -356,6 +408,7 @@ export async function savePushSubscription(subscription: unknown): Promise<{ ok:
   const parsed = pushSubscriptionSchema.safeParse(subscription);
   if (!parsed.success) return { ok: false };
   const { endpoint, keys } = parsed.data;
+  if (!isAllowedPushEndpoint(endpoint)) return { ok: false };
   // An endpoint belongs to one browser; if someone else used it before, it's now this student's.
   await db.pushSubscription.upsert({
     where: { endpoint },
@@ -398,5 +451,32 @@ export async function updateLocale(formData: FormData) {
   if (!hasLocale(locale)) return;
   await db.user.update({ where: { id: student.id }, data: { locale } });
   (await cookies()).set(LOCALE_COOKIE, locale, { path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax" });
-  redirect(localePath(locale, "/profile"));
+  // Stay on the same page. Only paths inside this site are accepted.
+  const path = formData.get("path");
+  redirect(localePath(locale, isInternalPath(path) ? path : "/"));
+}
+
+// ---------- Privacy ----------
+
+export async function acceptPrivacy(formData: FormData) {
+  const student = await getStudentForConsent();
+  if (formData.get("ageConfirm") !== "on") return;
+  await db.user.update({
+    where: { id: student.id },
+    data: { privacyVersion: PRIVACY_VERSION, privacyAcceptedAt: new Date() },
+  });
+  redirect(localePath(await getRequestLocale(), "/"));
+}
+
+// Only records the request: an admin approves it (scripts/approve-deletion.ts).
+export async function requestDeletion() {
+  const student = await getCurrentStudent();
+  await db.user.update({ where: { id: student.id }, data: { deletionRequestedAt: new Date() } });
+  refresh();
+}
+
+export async function cancelDeletion() {
+  const student = await getCurrentStudent();
+  await db.user.update({ where: { id: student.id }, data: { deletionRequestedAt: null } });
+  refresh();
 }

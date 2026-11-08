@@ -1,16 +1,7 @@
 // Gives a student a temporary password. They must choose their own at next login,
 // and every device they were signed in on is signed out.
 // Usage: npm run auth:temp-password -- student@example.com
-import { randomBytes } from "node:crypto";
-import { db, findStudent, hash, run } from "./admin-lib";
-
-const WORDS = ["kite", "moss", "lamp", "reef", "fern", "dune", "mint", "opal", "pine", "wave", "jade", "bolt"];
-
-function tempPassword() {
-  const pick = () => WORDS[randomBytes(1)[0] % WORDS.length];
-  const digits = String(randomBytes(2).readUInt16BE(0) % 10000).padStart(4, "0");
-  return `${pick()}-${digits}-${pick()}`;
-}
+import { db, findStudent, hash, run, tempPassword } from "./admin-lib";
 
 run(async () => {
   const user = await findStudent(process.argv[2]);

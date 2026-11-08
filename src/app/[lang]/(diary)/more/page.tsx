@@ -24,7 +24,7 @@ export default async function MorePage() {
   return (
     <>
       <PageTitle title={t.more.title} />
-      <ul className="overflow-hidden rounded-2xl border border-line bg-surface">
+      <ul className="max-w-2xl overflow-hidden rounded-2xl border border-line bg-surface">
         {links.map(({ path, label, hint, Icon }) => (
           <li key={path} className="border-b border-line last:border-b-0">
             <Link href={localePath(locale, path)} className="flex items-center gap-3 px-4 py-3.5">

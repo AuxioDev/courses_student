@@ -25,8 +25,6 @@ export async function GET(request: Request, { params }: RouteContext<"/api/files
       "Content-Disposition": `${download ? "attachment" : "inline"}; filename*=UTF-8''${encodeURIComponent(file.name)}`,
       "Cache-Control": "private, max-age=300",
       "X-Content-Type-Options": "nosniff",
-      // Uploaded files never run as part of the site, even if they're HTML in disguise.
-      "Content-Security-Policy": "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; sandbox",
     },
   });
 }

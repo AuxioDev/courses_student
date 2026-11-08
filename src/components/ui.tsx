@@ -16,7 +16,7 @@ export function Section({ title, action, children }: { title: string; action?: R
   return (
     <section className="mb-6">
       <div className="mb-2 flex items-center justify-between">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted">{title}</h2>
+        <h2 className="text-sm font-semibold text-muted">{title}</h2>
         {action}
       </div>
       {children}
@@ -25,7 +25,9 @@ export function Section({ title, action, children }: { title: string; action?: R
 }
 
 export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <div className={`rounded-2xl border border-line bg-surface p-4 ${className}`}>{children}</div>;
+  // Lists pass "p-0" to run edge to edge; two padding classes would otherwise clash.
+  const padding = className.includes("p-0") ? "" : "p-4";
+  return <div className={`rounded-2xl border border-line bg-surface ${padding} ${className}`}>{children}</div>;
 }
 
 export function Empty({ children }: { children: ReactNode }) {
@@ -36,7 +38,7 @@ export function Empty({ children }: { children: ReactNode }) {
 
 const tones = {
   neutral: "bg-surface-2 text-muted",
-  accent: "bg-accent-soft text-accent",
+  accent: "bg-surface-2 text-ink",
   good: "bg-good-soft text-good",
   warn: "bg-warn-soft text-warn",
   bad: "bg-bad-soft text-bad",

@@ -11,7 +11,18 @@ import { addDays, dayKey, startOfDay, weekday } from "../src/lib/dates";
 
 const db = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) });
 const TZ = "Asia/Baku"; // also the schema default for new users
-const PASSWORD = "password123";
+// On a public demo set SEED_PASSWORD, and SEED_STUDENT_EMAIL to a real inbox for testing email.
+const PASSWORD = process.env.SEED_PASSWORD || "password123";
+const STUDENT_EMAIL = process.env.SEED_STUDENT_EMAIL || "student@example.com";
+
+// This script deletes every table. It only runs against a database on this
+// computer, unless --yes-wipe is passed on purpose.
+function assertSafeToWipe() {
+  const host = new URL(process.env.DATABASE_URL ?? "").hostname;
+  const local = host === "localhost" || host === "127.0.0.1";
+  if ((local && process.env.NODE_ENV !== "production") || process.argv.includes("--yes-wipe")) return;
+  throw new Error(`Refusing to wipe the database at ${host}. Pass --yes-wipe if you really mean it.`);
+}
 
 async function wipe() {
   // Files uploaded in local development (see src/lib/storage.ts).
@@ -49,19 +60,31 @@ function at(key: string, time: string) {
 }
 
 async function main() {
+  assertSafeToWipe();
   await wipe();
   const passwordHash = await bcrypt.hash(PASSWORD, 10);
   const now = new Date();
   const today = dayKey(now, TZ);
 
   const user = (name: string, email: string, role: "admin" | "teacher" | "student") =>
-    db.user.create({ data: { name, email, role, passwordHash, timezone: TZ } });
+    // Everyone has accepted the privacy notice except Nigar, who tests that flow.
+    db.user.create({
+      data: {
+        name,
+        email,
+        role,
+        passwordHash,
+        timezone: TZ,
+        privacyVersion: email === "nigar@example.com" ? null : 1,
+        privacyAcceptedAt: email === "nigar@example.com" ? null : new Date(),
+      },
+    });
 
   await user("Admin User", "admin@example.com", "admin");
   const leyla = await user("Leyla Mammadova", "leyla@example.com", "teacher");
   const tural = await user("Tural Aliyev", "tural@example.com", "teacher");
   const students = await Promise.all([
-    user("Aysel Huseynova", "student@example.com", "student"),
+    user("Aysel Huseynova", STUDENT_EMAIL, "student"),
     // Murad tests the first-login flow: he must choose his own password.
     user("Murad Karimov", "murad@example.com", "student").then((u) =>
       db.user.update({ where: { id: u.id }, data: { mustChangePassword: true } }),
@@ -340,7 +363,7 @@ async function main() {
     ],
   });
 
-  console.log(`Seeded. Log in as student@example.com / ${PASSWORD}`);
+  console.log(`Seeded. Log in as ${STUDENT_EMAIL}${process.env.SEED_PASSWORD ? " with SEED_PASSWORD" : ` / ${PASSWORD}`}`);
 }
 
 // A finished term with its own course, low attendance and a published final grade,

@@ -2,10 +2,11 @@ import "server-only";
 import { db } from "../db";
 import { notify } from "./notify";
 
-const WINDOW_MS = 24 * 60 * 60 * 1000;
+// A day plus margin: Vercel Hobby may run the job up to an hour late. dedupeKey prevents repeats.
+const WINDOW_MS = 26 * 60 * 60 * 1000;
 
 // Reminds every enrolled student who hasn't handed in yet about homework due in
-// the next 24 hours. Safe to run more than once: each reminder has a dedupeKey.
+// about the next day. Safe to run more than once: each reminder has a dedupeKey.
 export async function sendDeadlineReminders(now = new Date()) {
   const homework = await db.homework.findMany({
     where: {

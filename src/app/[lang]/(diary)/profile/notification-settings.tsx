@@ -124,7 +124,9 @@ export function NotificationSettings({
         <table className="mb-3 w-full text-sm">
           <thead>
             <tr className="text-xs text-muted">
-              <th className="py-1 text-left font-medium" />
+              <th className="py-1 text-left font-medium">
+                <span className="sr-only">{labels.notificationsTitle}</span>
+              </th>
               <th className="w-16 py-1 font-medium">{labels.colEmail}</th>
               <th className="w-16 py-1 font-medium">{labels.colPush}</th>
             </tr>

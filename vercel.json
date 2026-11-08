@@ -1,4 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "crons": [{ "path": "/api/cron/reminders", "schedule": "0 14 * * *" }]
+  "regions": ["fra1"],
+  "buildCommand": "npm run vercel-build",
+  "crons": [
+    { "path": "/api/cron/reminders", "schedule": "0 14 * * *" },
+    { "path": "/api/cron/retention", "schedule": "0 2 * * *" }
+  ]
 }
