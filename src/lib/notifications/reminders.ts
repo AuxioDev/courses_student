@@ -37,7 +37,8 @@ export async function sendDeadlineReminders(now = new Date()) {
         studentId,
         "deadline",
         { homeworkId: hw.id, homeworkTitle: hw.title, course: hw.group.course.title, dueAt: hw.dueAt.toISOString() },
-        { dedupeKey: `deadline:${hw.id}` },
+        // Includes the date, so a deadline the teacher moves gets its own reminder.
+        { dedupeKey: `deadline:${hw.id}:${hw.dueAt.toISOString()}` },
       );
       if (created) sent++;
       else skipped++;

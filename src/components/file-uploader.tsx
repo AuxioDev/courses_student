@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useRef, useState, useTransition, useEffect } from "react";
 import { put } from "@vercel/blob/client";
 import type { Dictionary } from "@/i18n/dictionaries/en";
 import { fmt } from "@/i18n/format";
@@ -72,16 +72,21 @@ export function FileUploader({
   homeworkId,
   files,
   labels,
+  onBusyChange,
 }: {
   homeworkId: string;
   files: UploadedFile[];
   labels: Dictionary["files"];
+  // The form disables "Submit" while a file is still going up: handing in before the upload is
+  // recorded would leave the file out of the hand-in.
+  onBusyChange?: (busy: boolean) => void;
 }) {
   const input = useRef<HTMLInputElement>(null);
   const [progress, setProgress] = useState<{ name: string; pct: number } | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
   const [removing, startRemoving] = useTransition();
   const busy = progress !== null || removing;
+  useEffect(() => onBusyChange?.(busy), [busy, onBusyChange]);
   const vars = (name = "") => ({ name, mb: MB, max: MAX_FILES_PER_HOMEWORK });
 
   async function onPick(picked: FileList | null) {

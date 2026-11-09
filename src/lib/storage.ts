@@ -17,7 +17,8 @@ export function storageDriver(): Driver {
   return "local";
 }
 
-const LOCAL_ROOT = path.join(process.cwd(), ".uploads");
+// UPLOADS_DIR lets a local Teacher App (which reads the same variable) and tests share a folder.
+const LOCAL_ROOT = path.resolve(process.cwd(), process.env.UPLOADS_DIR ?? ".uploads");
 
 // Keys look like submissions/<homeworkId>/<studentId>/<random>.<ext>; anything else is rejected
 // before it can touch the filesystem.

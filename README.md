@@ -117,7 +117,7 @@ A file's first bytes must match its extension, so a renamed program is refused. 
 not virus scanning.
 
 Files are only served through `GET /api/files/[id]`, which checks who is asking (only
-the owner for now; teachers and admins come with their apps). The content type is
+the owner here; the Teacher app has its own route for the teacher of that group). The content type is
 always derived from the file extension, never taken from the browser, and responses
 are sent with `nosniff` and a sandboxing CSP.
 

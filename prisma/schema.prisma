@@ -273,6 +273,7 @@ model Mark {
   creator  User          @relation("MarkCreator", fields: [createdBy], references: [id])
   history  MarkHistory[]
 
+  @@unique([studentId, homeworkId]) // one mark per homework; lesson marks have a null homeworkId
   @@index([studentId, groupId])
   @@map("marks")
 }

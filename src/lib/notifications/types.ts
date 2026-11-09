@@ -4,7 +4,7 @@ import type { MarkType, NotificationType } from "@/generated/prisma/enums";
 import type { Dictionary } from "@/i18n/dictionaries/en";
 import { localePath, type Locale } from "@/i18n/config";
 import { fmt } from "@/i18n/format";
-import { formatDateTime, formatDayKey } from "../dates";
+import { dayKey, formatDateTime, formatDayKey } from "../dates";
 
 export type NotificationPayloads = {
   new_homework: { homeworkId: string; homeworkTitle: string; course: string; dueAt: string };
@@ -86,7 +86,8 @@ export function renderNotification(
       return {
         title: fmt(kind.title, { course: d.course }),
         body: fmt(kind.body, { date: day(d.date), newDate: when(d.newStartsAt) }),
-        path: `/diary?date=${d.date}`,
+        // A moved lesson is found on its new day, not the one it left.
+        path: `/diary?date=${d.newStartsAt ? dayKey(new Date(d.newStartsAt), timeZone) : d.date}`,
       };
     }
     case "homework_returned": {

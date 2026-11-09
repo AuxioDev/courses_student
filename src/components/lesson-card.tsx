@@ -9,6 +9,24 @@ import { VideoIcon } from "./icons";
 
 const JOIN_WINDOW_MS = 15 * 60 * 1000;
 
+// Materials are plain text from the teacher. Only http(s) addresses become links, and
+// punctuation right after an address stays out of it.
+function Materials({ text }: { text: string }) {
+  return (
+    <p className="mt-2 whitespace-pre-wrap break-words text-sm text-muted">
+      {text.split(/(https?:\/\/[^\s<>"']*[^\s<>"'.,;:!?)])/g).map((part, i) =>
+        i % 2 === 1 ? (
+          <a key={i} href={part} target="_blank" rel="noreferrer" className="break-all text-accent">
+            {part}
+          </a>
+        ) : (
+          part
+        ),
+      )}
+    </p>
+  );
+}
+
 export async function LessonCard({ lesson, timeZone, now }: { lesson: LessonWithDetails; timeZone: string; now: Date }) {
   const { locale, t } = await getI18n();
   const statusTone = lessonStatusTone[lesson.status];
@@ -38,7 +56,7 @@ export async function LessonCard({ lesson, timeZone, now }: { lesson: LessonWith
         <p className="mt-0.5 text-xs text-muted">
           {lesson.group.name} · {lesson.teacher.name}
         </p>
-        {lesson.materials && <p className="mt-2 text-sm text-muted">{lesson.materials}</p>}
+        {lesson.materials && <Materials text={lesson.materials} />}
         {lesson.homework.length > 0 && (
           <ul className="mt-2 space-y-1">
             {lesson.homework.map((hw) => (

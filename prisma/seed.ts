@@ -2,7 +2,7 @@
 // Until the Admin Panel and Teacher App exist, this is the only way to get data in.
 // Run with: npm run db:seed   (wipes all tables first)
 import "dotenv/config";
-import { rm } from "node:fs/promises";
+import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import bcrypt from "bcryptjs";
 import { PrismaPg } from "@prisma/adapter-pg";
@@ -304,6 +304,7 @@ async function main() {
   }
 
   await db.schoolSettings.create({ data: { id: 1 } });
+  await seedClassWork(students, leyla, now);
   await seedPastTerm(students, leyla);
 
   await db.studentTodo.createMany({
@@ -364,6 +365,103 @@ async function main() {
   });
 
   console.log(`Seeded. Log in as ${STUDENT_EMAIL}${process.env.SEED_PASSWORD ? " with SEED_PASSWORD" : ` / ${PASSWORD}`}`);
+}
+
+// Work from the other students in Leyla's group, so the Teacher app has a real queue:
+// one late hand-in, one on time with a file, and one already graded.
+async function seedClassWork(students: { id: string }[], teacher: { id: string }, now: Date) {
+  const [, murad, nigar] = students;
+  const past = await db.homework.findMany({
+    where: { group: { name: "ENG-B2-1" }, dueAt: { lt: now } },
+    orderBy: { dueAt: "desc" },
+    take: 2,
+  });
+  if (past.length < 2) return;
+  const [recent, older] = past;
+  const hours = (date: Date, n: number) => new Date(date.getTime() + n * 60 * 60_000);
+
+  const lateAt = hours(recent.dueAt, 5);
+  await db.submission.create({
+    data: {
+      homeworkId: recent.id,
+      studentId: murad.id,
+      content: "Sorry this is late, I was ill.",
+      links: [],
+      status: "late",
+      submittedAt: lateAt,
+      attempts: { create: { number: 1, content: "Sorry this is late, I was ill.", links: [], late: true, submittedAt: lateAt } },
+    },
+  });
+
+  const onTimeAt = hours(recent.dueAt, -4);
+  const submission = await db.submission.create({
+    data: {
+      homeworkId: recent.id,
+      studentId: nigar.id,
+      content: "My answers are in the attached file.",
+      links: [],
+      status: "submitted",
+      submittedAt: onTimeAt,
+      attempts: { create: { number: 1, content: "My answers are in the attached file.", links: [], submittedAt: onTimeAt } },
+    },
+    include: { attempts: true },
+  });
+  // Stored in ./.uploads, so it only exists when seeding on this computer.
+  if (new URL(process.env.DATABASE_URL ?? "").hostname === "localhost") {
+    const storageKey = `submissions/${recent.id}/${nigar.id}/demo-answers.txt`;
+    const content = "Exercise 1: done\nExercise 2: done\n";
+    await mkdir(path.dirname(path.join(process.cwd(), ".uploads", storageKey)), { recursive: true });
+    await writeFile(path.join(process.cwd(), ".uploads", storageKey), content);
+    await db.submissionFile.create({
+      data: {
+        homeworkId: recent.id,
+        studentId: nigar.id,
+        attemptId: submission.attempts[0].id,
+        name: "answers.txt",
+        size: Buffer.byteLength(content),
+        contentType: "text/plain",
+        storageKey,
+      },
+    });
+  }
+
+  const gradedAt = hours(older.dueAt, 24);
+  const handedInAt = hours(older.dueAt, -2);
+  await db.submission.create({
+    data: {
+      homeworkId: older.id,
+      studentId: murad.id,
+      content: "All exercises done.",
+      links: [],
+      status: "graded",
+      score: 74,
+      feedback: "Good, but check exercise 4.",
+      submittedAt: handedInAt,
+      attempts: {
+        create: {
+          number: 1,
+          content: "All exercises done.",
+          links: [],
+          submittedAt: handedInAt,
+          outcome: "graded",
+          score: 74,
+          feedback: "Good, but check exercise 4.",
+          reviewedAt: gradedAt,
+        },
+      },
+    },
+  });
+  await db.mark.create({
+    data: {
+      studentId: murad.id,
+      groupId: older.groupId,
+      homeworkId: older.id,
+      type: "homework",
+      value: 74,
+      createdBy: teacher.id,
+      createdAt: gradedAt,
+    },
+  });
 }
 
 // A finished term with its own course, low attendance and a published final grade,

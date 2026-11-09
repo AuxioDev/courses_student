@@ -178,6 +178,8 @@ const submissionSchema = z.object({
     .pipe(z.array(z.url({ protocol: /^https?$/ })).max(10)),
 });
 
+class GradedMeanwhile extends Error {}
+
 export async function submitHomework(_prev: FormState, formData: FormData): Promise<FormState> {
   const student = await getCurrentStudent();
   const parsed = submissionSchema.safeParse({
@@ -212,11 +214,22 @@ export async function submitHomework(_prev: FormState, formData: FormData): Prom
 
   try {
     await db.$transaction(async (tx) => {
-      const submission = await tx.submission.upsert({
-        where: { homeworkId_studentId: { homeworkId, studentId: student.id } },
-        create: { homeworkId, studentId: student.id, content, links, status, submittedAt: now },
-        update: { content, links, status, submittedAt: now, score: null, feedback: null },
-      });
+      let submission;
+      if (existing) {
+        // Conditional, because the teacher may have graded this since the check above.
+        const claimed = await tx.submission.updateMany({
+          where: { homeworkId, studentId: student.id, status: { not: "graded" } },
+          data: { content, links, status, submittedAt: now, score: null, feedback: null },
+        });
+        if (claimed.count === 0) throw new GradedMeanwhile();
+        submission = await tx.submission.findUniqueOrThrow({
+          where: { homeworkId_studentId: { homeworkId, studentId: student.id } },
+        });
+      } else {
+        submission = await tx.submission.create({
+          data: { homeworkId, studentId: student.id, content, links, status, submittedAt: now },
+        });
+      }
       const attempt = await tx.submissionAttempt.create({
         data: {
           submissionId: submission.id,
@@ -247,6 +260,7 @@ export async function submitHomework(_prev: FormState, formData: FormData): Prom
       }
     });
   } catch (e) {
+    if (e instanceof GradedMeanwhile) return { error: "alreadyGraded" };
     // A double tap: the other request already created this attempt.
     if (!(e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002")) throw e;
   }

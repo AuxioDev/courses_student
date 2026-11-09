@@ -76,6 +76,7 @@ export function SubmitForm({
   const key = draftKey(studentId, homeworkId);
   const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [draftStatus, setDraftStatus] = useState<"none" | "saved" | "dismissed">("none");
+  const [uploading, setUploading] = useState(false);
   const [state, action, pending] = useActionState(async (prev: Parameters<typeof submitHomework>[0], data: FormData) => {
     // A save still waiting from the last keystroke would otherwise land after the hand-in.
     clearTimeout(saveTimer.current);
@@ -163,10 +164,10 @@ export function SubmitForm({
           </span>
         </label>
       )}
-      <FileUploader homeworkId={homeworkId} files={files} labels={fileLabels} />
+      <FileUploader homeworkId={homeworkId} files={files} labels={fileLabels} onBusyChange={setUploading} />
       {state?.error && <p className="rounded-xl bg-bad-soft px-3 py-2 text-sm text-bad">{errors[state.error]}</p>}
       {state?.ok && <p className="rounded-xl bg-good-soft px-3 py-2 text-sm text-good">{ok[state.ok]}</p>}
-      <button type="submit" disabled={pending} className="btn w-full">
+      <button type="submit" disabled={pending || uploading} className="btn w-full">
         {pending ? labels.submitting : submitLabel}
       </button>
     </form>
