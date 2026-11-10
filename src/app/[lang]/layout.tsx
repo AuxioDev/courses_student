@@ -5,6 +5,7 @@ import { locales } from "@/i18n/config";
 import { getI18n } from "@/i18n";
 import "../globals.css";
 import "../role-theme.css";
+import "../motion.css";
 import { ServiceWorkerRegister } from "@/components/pwa/sw-register";
 
 const bodyFont = Onest({

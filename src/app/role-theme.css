@@ -91,6 +91,8 @@ body .font-mono:is(.text-lg, .text-xl, .text-2xl, .text-3xl) {
   font-weight: 700;
   line-height: 1;
   transform: rotate(-3deg) scale(1.25);
+  /* Written in from left to right. Marks are content, so this finishes within 0.6 s. */
+  animation: ink-write 0.35s var(--ease-out) 0.1s both;
 }
 
 @keyframes margin-draw {
@@ -107,5 +109,34 @@ body .font-mono:is(.text-lg, .text-xl, .text-2xl, .text-3xl) {
   }
   to {
     background-size: 100% 6px;
+  }
+}
+
+/* In a list, each mark is written a moment after the one above it. The whole list is done within 0.6 s. */
+li:nth-child(2) .font-mono:is(.text-lg, .text-xl, .text-2xl, .text-3xl) { animation-delay: 0.13s; }
+li:nth-child(3) .font-mono:is(.text-lg, .text-xl, .text-2xl, .text-3xl) { animation-delay: 0.16s; }
+li:nth-child(4) .font-mono:is(.text-lg, .text-xl, .text-2xl, .text-3xl) { animation-delay: 0.19s; }
+li:nth-child(5) .font-mono:is(.text-lg, .text-xl, .text-2xl, .text-3xl) { animation-delay: 0.22s; }
+li:nth-child(6) .font-mono:is(.text-lg, .text-xl, .text-2xl, .text-3xl) { animation-delay: 0.25s; }
+
+/* The current tab gives a small pop when it becomes current. */
+nav a[aria-current="page"] svg {
+  animation: icon-pop 0.38s var(--ease-spring) both;
+}
+
+@keyframes ink-write {
+  from {
+    clip-path: inset(-20% 100% -20% 0);
+  }
+  to {
+    clip-path: inset(-20% -20% -20% 0);
+  }
+}
+@keyframes icon-pop {
+  from {
+    transform: scale(0.7);
+  }
+  to {
+    transform: scale(1);
   }
 }
