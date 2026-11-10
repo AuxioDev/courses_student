@@ -1,22 +1,25 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Onest, Caveat } from "next/font/google";
 import { lang } from "next/root-params";
 import { locales } from "@/i18n/config";
 import { getI18n } from "@/i18n";
 import "../globals.css";
+import "../role-theme.css";
 import { ServiceWorkerRegister } from "@/components/pwa/sw-register";
 
-const geistSans = Geist({
+const bodyFont = Onest({
+  // The shared stylesheet names its sans and mono variables after Geist, so these keep those names.
   variable: "--font-geist-sans",
-  subsets: ["latin", "cyrillic"],
+  subsets: ["latin", "latin-ext", "cyrillic"],
+  display: "swap",
 });
 
-// Only used for numbers (times, scores), so it isn't worth delaying the first
-// paint on slow connections by preloading it.
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin", "cyrillic"],
+// Marks and scores are written in pen, like a teacher in a paper diary. Only digits use it, so it is not preloaded.
+const penFont = Caveat({
+  variable: "--font-pen",
+  subsets: ["latin", "latin-ext", "cyrillic"],
   preload: false,
+  display: "swap",
 });
 
 export function generateStaticParams() {
@@ -39,14 +42,14 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#17232d" },
+    { media: "(prefers-color-scheme: light)", color: "#fbfcff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0f1830" },
   ],
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/[lang]">) {
   return (
-    <html lang={await lang()} className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+    <html lang={await lang()} className={`${bodyFont.variable} ${penFont.variable} h-full antialiased`}>
       <body className="min-h-full font-sans">
         {children}
         <ServiceWorkerRegister />

@@ -1,0 +1,111 @@
+/* Student Diary: a squared school notebook. Faint blue squares, a red margin line, navy
+   ballpoint ink, and marks written in pen (Caveat) like a teacher would. The accent stays the
+   diary's green. Loaded after globals.css, which is identical in all three apps (the Teacher
+   and Admin apps compare it byte for byte), so everything that differs lives here.
+   Contrast is checked by src/lib/__tests__/contrast.test.ts. */
+:root {
+  --bg: #fbfcff;
+  --surface: #ffffff;
+  --surface-2: #edf1fb;
+  --ink: #1b2750;
+  --muted: #515d86;
+  --line: #cfd9ee;
+  --accent: #16794c;
+  --accent-ink: #ffffff;
+  --accent-soft: #e2f3ea;
+  --paper-grid: #e1e8f7;
+  --margin-line: #e98a8c;
+  --pen: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 6' preserveAspectRatio='none'%3E%3Cpath d='M0 3Q6 0 12 3T24 3T36 3T48 3T60 3T72 3T84 3T100 3' fill='none' stroke='%2316794c' stroke-width='1.6' stroke-linecap='round' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E");
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1830;
+    --surface: #17223f;
+    --surface-2: #1f2d52;
+    --ink: #e8edfb;
+    --muted: #a4b1d6;
+    --line: #2c3b66;
+    --accent: #52c78f;
+    --accent-ink: #0d2a1e;
+    --accent-soft: #1f4234;
+    --paper-grid: #16244a;
+    --margin-line: #8a4560;
+    --pen: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 6' preserveAspectRatio='none'%3E%3Cpath d='M0 3Q6 0 12 3T24 3T36 3T48 3T60 3T72 3T84 3T100 3' fill='none' stroke='%2352c78f' stroke-width='1.6' stroke-linecap='round' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E");
+  }
+}
+
+/* The page is the paper. */
+body {
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(var(--paper-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--paper-grid) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* The margin line runs down the page once, when it loads. On wide screens it sits just
+   right of the side navigation, where the page begins. */
+body::before {
+  content: "";
+  position: fixed;
+  z-index: -1;
+  top: 0;
+  bottom: 0;
+  left: 12px;
+  width: 2px;
+  background: var(--margin-line);
+  opacity: 0.7;
+  pointer-events: none;
+  transform-origin: top;
+  animation: margin-draw 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@media (min-width: 1024px) {
+  body::before {
+    left: calc(15rem + 14px);
+  }
+}
+
+/* Page titles are underlined in pen, written left to right. */
+main h1 {
+  width: fit-content;
+  padding-bottom: 0.4rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  background: var(--pen) left bottom / 100% 6px no-repeat;
+  animation: pen-write 0.9s 0.2s cubic-bezier(0.3, 0.7, 0.2, 1) both;
+}
+main h2 {
+  font-weight: 650;
+}
+
+/* Times and counts use the text face with even-width digits. Large numbers (marks, scores,
+   averages) are the teacher's handwriting. */
+body .font-mono {
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+body .font-mono:is(.text-lg, .text-xl, .text-2xl, .text-3xl) {
+  display: inline-block;
+  font-family: var(--font-pen), cursive;
+  font-weight: 700;
+  line-height: 1;
+  transform: rotate(-3deg) scale(1.25);
+}
+
+@keyframes margin-draw {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+@keyframes pen-write {
+  from {
+    background-size: 0 6px;
+  }
+  to {
+    background-size: 100% 6px;
+  }
+}

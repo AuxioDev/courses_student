@@ -18,7 +18,8 @@ export function storageDriver(): Driver {
 }
 
 // UPLOADS_DIR lets a local Teacher App (which reads the same variable) and tests share a folder.
-const LOCAL_ROOT = path.resolve(process.cwd(), process.env.UPLOADS_DIR ?? ".uploads");
+// Only configurable in development. The annotation keeps Turbopack from tracing the whole project for it.
+const LOCAL_ROOT = path.resolve(/* turbopackIgnore: true */ process.cwd(), process.env.UPLOADS_DIR ?? ".uploads");
 
 // Keys look like submissions/<homeworkId>/<studentId>/<random>.<ext>; anything else is rejected
 // before it can touch the filesystem.
