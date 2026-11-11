@@ -64,7 +64,7 @@ async function HomeworkDetail({ params }: Pick<PageProps<"/[lang]/homework/[id]"
 
   return (
     <>
-      <Link href={localePath(locale, "/homework")} className="mb-3 inline-flex items-center gap-1 text-sm text-muted">
+      <Link href={localePath(locale, "/homework")} className="mb-0 inline-flex min-h-11 items-center gap-1 text-sm text-muted sm:mb-3 sm:min-h-6">
         <ChevronLeft width={18} height={18} /> {t.homework.title}
       </Link>
 
@@ -90,7 +90,7 @@ async function HomeworkDetail({ params }: Pick<PageProps<"/[lang]/homework/[id]"
           {hw.description && (
             <Section title={t.homework.task}>
               <Card>
-                <p className="whitespace-pre-wrap text-[15px] leading-relaxed">{hw.description}</p>
+                <p className="whitespace-pre-wrap text-[0.9375rem] leading-relaxed">{hw.description}</p>
               </Card>
             </Section>
           )}

@@ -98,7 +98,7 @@ async function Profile() {
               </form>
             )}
           </div>
-          <Link href={localePath(locale, "/privacy")} className="mt-3 inline-block text-sm text-accent">
+          <Link href={localePath(locale, "/privacy")} className="mt-3 inline-flex min-h-11 items-center text-sm text-accent sm:min-h-6">
             {t.privacy.link}
           </Link>
         </Card>

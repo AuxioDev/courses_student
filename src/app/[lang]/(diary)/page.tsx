@@ -47,7 +47,7 @@ async function Today() {
   const weekAgo = now.getTime() - 7 * 24 * 60 * 60 * 1000;
   const newMarks = marks.filter((m) => m.createdAt.getTime() > weekAgo);
   const allLink = (path: string) => (
-    <Link href={localePath(locale, path)} className="text-sm text-accent">
+    <Link href={localePath(locale, path)} className="inline-flex min-h-11 min-w-11 items-center justify-end text-sm text-accent sm:min-h-6">
       {t.common.all}
     </Link>
   );
@@ -63,7 +63,7 @@ async function Today() {
         <Section
           title={t.attendance.alertsTitle}
           action={
-            <Link href={localePath(locale, "/attendance")} className="text-sm text-accent">
+            <Link href={localePath(locale, "/attendance")} className="inline-flex min-h-11 min-w-11 items-center justify-end text-sm text-accent sm:min-h-6">
               {t.common.all}
             </Link>
           }

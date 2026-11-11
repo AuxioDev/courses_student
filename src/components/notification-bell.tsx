@@ -14,7 +14,7 @@ export async function NotificationBell() {
     >
       <BellIcon />
       {unread > 0 && (
-        <span className="absolute right-1 top-1 min-w-4 rounded-full bg-bad px-1 text-center text-[11px] font-bold leading-4 text-bg">
+        <span className="absolute right-1 top-1 min-w-4 rounded-full bg-bad px-1 text-center text-[0.6875rem] font-bold leading-4 text-bg">
           {unread > 9 ? "9+" : unread}
         </span>
       )}

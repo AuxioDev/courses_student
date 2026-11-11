@@ -62,7 +62,7 @@ async function Marks({ searchParams }: Pick<PageProps<"/[lang]/marks">, "searchP
                 <p className={`font-mono text-2xl font-semibold ${c.average == null ? "" : bandText[averageBand(c.average)]}`}>
                   {c.average == null ? "—" : formatAverage(c.average)}
                 </p>
-                <p className="text-[11px] text-muted">{t.marks.average}</p>
+                <p className="text-[0.6875rem] text-muted">{t.marks.average}</p>
               </div>
             </summary>
             <div className="border-t border-line">
