@@ -1,14 +1,14 @@
 // Gives a student a temporary password. They must choose their own at next login,
 // and every device they were signed in on is signed out.
 // Usage: npm run auth:temp-password -- student@example.com
-import { db, findStudent, hash, run, tempPassword } from "./admin-lib";
+import { db, findStudent, hash, run, tempPassword, tempPasswordExpiry } from "./admin-lib";
 
 run(async () => {
   const user = await findStudent(process.argv[2]);
   const password = tempPassword();
   await db.user.update({
     where: { id: user.id },
-    data: { passwordHash: await hash(password), mustChangePassword: true, sessionVersion: { increment: 1 } },
+    data: { passwordHash: await hash(password), mustChangePassword: true, tempPasswordExpiresAt: tempPasswordExpiry(), sessionVersion: { increment: 1 } },
   });
   console.log(`Temporary password for ${user.name} <${user.email}>: ${password}`);
   console.log("They will be asked to choose their own password when they log in.");

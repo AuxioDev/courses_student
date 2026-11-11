@@ -8,7 +8,7 @@
 // login. The passwords are written to .imports/ (private, ignored by git), never
 // printed. Emails already in use are skipped.
 import { chmod, mkdir, readFile, writeFile } from "node:fs/promises";
-import { db, hash, run, tempPassword } from "./admin-lib";
+import { db, hash, run, tempPassword, tempPasswordExpiry } from "./admin-lib";
 
 type Row = { line: number; name: string; email: string; group: string };
 
@@ -92,7 +92,7 @@ run(async () => {
         email: r.email,
         role: "student",
         passwordHash: await hash(password),
-        mustChangePassword: true,
+        mustChangePassword: true, tempPasswordExpiresAt: tempPasswordExpiry(),
         ...(r.group ? { enrollments: { create: { groupId: groupIds.get(r.group)! } } } : {}),
       },
     });

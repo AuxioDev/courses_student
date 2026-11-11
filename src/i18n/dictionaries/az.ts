@@ -30,6 +30,7 @@ export const az: Dictionary = {
   errors: {
     missingCredentials: "E-poçt və şifrənizi daxil edin.",
     wrongCredentials: "E-poçt və ya şifrə yanlışdır.",
+    tempPasswordExpired: "Bu müvəqqəti şifrənin müddəti bitib. Məktəbdən yenisini istəyin.",
     notStudent: "Bu tətbiq şagirdlər üçündür. Müəllim və adminlərin öz tətbiqləri var.",
     badLinks: "Linklər tam http(s) ünvanı olmalıdır, hər sətirdə bir link.",
     emptySubmission: "Cavab yazın, fayl və ya link əlavə edin.",

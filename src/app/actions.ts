@@ -10,6 +10,7 @@ import { createSession, deleteSession } from "@/lib/session";
 import { getCurrentStudent, getStudentForConsent, getStudentForPasswordChange } from "@/lib/auth";
 import { PRIVACY_VERSION } from "@/lib/privacy";
 import { hashPassword, hashToken, newPasswordSchema, verifyPassword } from "@/lib/passwords";
+import { isTempPasswordExpired } from "@/lib/temp-password";
 import { clientIp, isLoginBlocked, recordLoginAttempt } from "@/lib/rate-limit";
 import { sendResetLink } from "@/lib/password-reset";
 import { isAllowedPushEndpoint } from "@/lib/push";
@@ -56,6 +57,10 @@ export async function login(_prev: FormState, formData: FormData): Promise<FormS
     await recordLoginAttempt(parsed.data.email, ip, false);
     return { error: "wrongCredentials", email };
   }
+  if (isTempPasswordExpired(user)) {
+    await recordLoginAttempt(parsed.data.email, ip, false);
+    return { error: "tempPasswordExpired", email };
+  }
   await recordLoginAttempt(parsed.data.email, ip, true);
   if (user.role !== "student") return { error: "notStudent", email };
 
@@ -101,7 +106,7 @@ async function setPassword(userId: string, password: string) {
   const [user] = await db.$transaction([
     db.user.update({
       where: { id: userId },
-      data: { passwordHash, mustChangePassword: false, sessionVersion: { increment: 1 } },
+      data: { passwordHash, mustChangePassword: false, tempPasswordExpiresAt: null, sessionVersion: { increment: 1 } },
     }),
     // Any other reset link still in someone's inbox stops working.
     db.authToken.deleteMany({ where: { userId, type: "reset" } }),
