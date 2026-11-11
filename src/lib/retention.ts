@@ -21,6 +21,26 @@ async function erasePrivateData(userId: string) {
   for (const key of new Set(files.map((f) => f.storageKey))) await deleteObject(key);
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+// Applications from the public website hold a stranger's phone and email. A rejected one goes
+// after 90 days, one nobody answered after 180, and an approved one after a year: by then the
+// student's account is the record. The public site's privacy page states these periods.
+export const APPLICATION_RETENTION_DAYS = { rejected: 90, open: 180, approved: 365 } as const;
+
+async function eraseOldApplications(now: Date) {
+  const before = (days: number) => new Date(now.getTime() - days * DAY_MS);
+  const { count } = await db.application.deleteMany({
+    where: {
+      OR: [
+        { status: "rejected", handledAt: { lte: before(APPLICATION_RETENTION_DAYS.rejected) } },
+        { status: { in: ["new", "contacted"] }, createdAt: { lte: before(APPLICATION_RETENTION_DAYS.open) } },
+        { status: "approved", handledAt: { lte: before(APPLICATION_RETENTION_DAYS.approved) } },
+      ],
+    },
+  });
+  return count;
+}
+
 export async function runRetention(now = new Date()) {
   // Accounts deactivated without a date (e.g. directly in the database) start their year now.
   await db.user.updateMany({
@@ -36,5 +56,5 @@ export async function runRetention(now = new Date()) {
     select: { id: true },
   });
   for (const { id } of due) await erasePrivateData(id);
-  return { erased: due.length };
+  return { erased: due.length, applications: await eraseOldApplications(now) };
 }

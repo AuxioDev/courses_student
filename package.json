@@ -16,7 +16,7 @@
     "auth:temp-password": "tsx scripts/temp-password.ts",
     "privacy:requests": "tsx scripts/approve-deletion.ts",
     "privacy:approve-deletion": "tsx scripts/approve-deletion.ts",
-    "vercel-build": "node scripts/vercel-build.mjs && next build",
+    "vercel-build": "node scripts/vercel-build.mjs",
     "students:import": "tsx scripts/import-students.ts",
     "test": "vitest run",
     "test:watch": "vitest",
