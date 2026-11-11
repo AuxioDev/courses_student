@@ -15,11 +15,12 @@ const bodyFont = Onest({
   display: "swap",
 });
 
-// Marks and scores are written in pen, like a teacher in a paper diary. Only digits use it, so it is not preloaded.
+// Marks and scores are written in pen, like a teacher in a paper diary. Only digits use it, and digits are plain
+// ASCII, so the one Latin subset is enough and it is preloaded: the marks are the first thing a student looks for,
+// and with the font loaded late they first showed in a fallback cursive and then jumped.
 const penFont = Caveat({
   variable: "--font-pen",
-  subsets: ["latin", "latin-ext", "cyrillic"],
-  preload: false,
+  subsets: ["latin"],
   display: "swap",
 });
 

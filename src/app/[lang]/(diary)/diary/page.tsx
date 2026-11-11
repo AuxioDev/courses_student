@@ -10,6 +10,7 @@ import { Badge, Card, Empty, Section } from "@/components/ui";
 import { ChevronLeft, ChevronRight, TrashIcon } from "@/components/icons";
 import { formatScore, homeworkStateTone } from "@/components/status";
 import { addNote, deleteNote } from "@/app/actions";
+import { SubmitButton } from "@/components/submit-button";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getI18n();
@@ -128,10 +129,8 @@ async function DiaryDay({ searchParams }: Pick<PageProps<"/[lang]/diary">, "sear
             )}
             <form action={addNote} className="flex gap-2">
               <input type="hidden" name="date" value={key} />
-              <input name="text" required placeholder={t.diary.notePlaceholder} className="field min-w-0 flex-1" />
-              <button type="submit" className="btn shrink-0">
-                {t.common.add}
-              </button>
+              <input name="text" required placeholder={t.diary.notePlaceholder} aria-label={t.diary.notePlaceholder} className="field min-w-0 flex-1" />
+              <SubmitButton className="btn shrink-0">{t.common.add}</SubmitButton>
             </form>
             <p className="mt-1 text-xs text-muted">{t.diary.notesPrivate}</p>
           </Section>

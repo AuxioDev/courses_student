@@ -7,6 +7,7 @@ import { getI18n } from "@/i18n";
 import { notificationHref, renderNotification } from "@/lib/notifications/types";
 import { Empty, PageTitle } from "@/components/ui";
 import { markAllNotificationsRead } from "@/app/actions";
+import { SubmitButton } from "@/components/submit-button";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getI18n();
@@ -32,9 +33,7 @@ async function Notifications() {
         action={
           unread && (
             <form action={markAllNotificationsRead}>
-              <button type="submit" className="btn-ghost">
-                {t.notifications.markAllRead}
-              </button>
+              <SubmitButton className="btn-ghost">{t.notifications.markAllRead}</SubmitButton>
             </form>
           )
         }

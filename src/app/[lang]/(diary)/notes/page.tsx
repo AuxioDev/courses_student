@@ -8,6 +8,7 @@ import { localePath } from "@/i18n/config";
 import { Card, Empty, PageTitle, Section } from "@/components/ui";
 import { CheckIcon, TrashIcon } from "@/components/icons";
 import { addNote, addTodo, deleteNote, deleteTodo, toggleTodo } from "@/app/actions";
+import { SubmitButton } from "@/components/submit-button";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getI18n();
@@ -34,11 +35,9 @@ async function Notes() {
       <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-8">
         <Section title={t.notes.todos}>
           <form action={addTodo} className="mb-3 flex flex-wrap gap-2">
-            <input name="title" required placeholder={t.notes.addTodo} className="field basis-full" />
+            <input name="title" required placeholder={t.notes.addTodo} aria-label={t.notes.addTodo} className="field basis-full" />
             <input name="dueAt" type="date" className="field min-w-0 flex-1" aria-label={t.notes.dueDate} />
-            <button type="submit" className="btn shrink-0">
-              {t.common.add}
-            </button>
+            <SubmitButton className="btn shrink-0">{t.common.add}</SubmitButton>
           </form>
           {todos.length === 0 ? (
             <Empty>{t.notes.noTodos}</Empty>
@@ -55,7 +54,7 @@ async function Notes() {
                     >
                       <span
                         className={`flex h-6 w-6 items-center justify-center rounded-md border ${
-                          todo.done ? "border-good bg-good text-white" : "border-line"
+                          todo.done ? "border-good bg-good text-bg" : "border-line"
                         }`}
                       >
                         {todo.done && <CheckIcon width={16} height={16} strokeWidth={3} />}
@@ -85,10 +84,8 @@ async function Notes() {
         <Section title={t.notes.notes}>
           <form action={addNote} className="mb-3 space-y-2">
             <input type="hidden" name="date" value={today} />
-            <textarea name="text" required rows={3} placeholder={t.notes.notePlaceholder} className="field resize-y" />
-            <button type="submit" className="btn">
-              {t.notes.saveNote}
-            </button>
+            <textarea name="text" required rows={3} placeholder={t.notes.notePlaceholder} aria-label={t.notes.notePlaceholder} className="field resize-y" />
+            <SubmitButton className="btn">{t.notes.saveNote}</SubmitButton>
           </form>
           {notes.length === 0 ? (
             <Empty>{t.notes.noNotes}</Empty>

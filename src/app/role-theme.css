@@ -95,6 +95,12 @@ body .font-mono:is(.text-lg, .text-xl, .text-2xl, .text-3xl) {
   animation: ink-write 0.35s var(--ease-out) 0.1s both;
 }
 
+/* Caveat's digits are small for their size, and the smallest mark (the list on Today) was the hardest to read. */
+body .font-mono.text-lg {
+  transform: rotate(-3deg) scale(1.55);
+  transform-origin: right center;
+}
+
 @keyframes margin-draw {
   from {
     transform: scaleY(0);
