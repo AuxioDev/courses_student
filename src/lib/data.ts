@@ -58,7 +58,14 @@ export async function getHomeworkList() {
   if (!term) return [];
   const rows = await db.homework.findMany({
     where: { groupId: { in: groupIds }, group: { termId: term.id } },
-    include: {
+    // A list needs the headline fields only: the description can be 20,000 characters and the attachments are
+    // links, so they are left to the single-homework page.
+    select: {
+      id: true,
+      title: true,
+      dueAt: true,
+      maxScore: true,
+      groupId: true,
       group: { select: { name: true, course: { select: { title: true } } } },
       submissions: {
         where: { studentId: student.id },
@@ -310,7 +317,11 @@ export async function getDiaryDay(key: DayKey) {
     getLessonsBetween(start, end),
     db.homework.findMany({
       where: { groupId: { in: groupIds }, dueAt: { gte: start, lt: end } },
-      include: {
+      select: {
+        id: true,
+        title: true,
+        dueAt: true,
+        maxScore: true,
         group: { select: { course: { select: { title: true } } } },
         submissions: { where: { studentId: student.id }, select: { status: true } },
       },

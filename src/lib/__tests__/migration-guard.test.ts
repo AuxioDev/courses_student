@@ -17,6 +17,17 @@ describe("findDestructive", () => {
     expect(findDestructive(sql)).toEqual([]);
   });
 
+  it("allows the harmless changes that look similar", () => {
+    const sql = `
+      ALTER INDEX "old_name" RENAME TO "new_name";
+      ALTER TABLE "users" ALTER COLUMN "locale" DROP NOT NULL;
+      ALTER TABLE "users" ALTER COLUMN "locale" SET DEFAULT 'az';
+      ALTER TABLE "users" ADD COLUMN "x" TEXT NOT NULL DEFAULT '';
+      ALTER TABLE "marks" ADD CONSTRAINT "marks_value_range" CHECK ("value" >= 0);
+    `;
+    expect(findDestructive(sql)).toEqual([]);
+  });
+
   it("allows dropping an index or a constraint (no rows are lost)", () => {
     expect(findDestructive('DROP INDEX "x"; ALTER TABLE "t" DROP CONSTRAINT "c";')).toEqual([]);
   });
@@ -27,6 +38,13 @@ describe("findDestructive", () => {
     'DROP TYPE "Role";',
     "TRUNCATE users;",
     "delete from users where true;",
+    'ALTER TABLE "marks" ALTER COLUMN "value" TYPE INTEGER;',
+    'ALTER TABLE "marks" ALTER COLUMN "value" SET DATA TYPE INTEGER USING "value"::int;',
+    'ALTER TABLE "users" ALTER COLUMN "locale" SET NOT NULL;',
+    'ALTER TABLE "users" RENAME COLUMN "name" TO "full_name";',
+    'ALTER TABLE "users" RENAME TO "people";',
+    'ALTER TYPE "Role" RENAME VALUE \'admin\' TO \'owner\';',
+    'ALTER TABLE "t" ADD COLUMN "a" INTEGER, DROP COLUMN "b";',
   ])("flags %s", (sql) => {
     expect(findDestructive(sql).length).toBeGreaterThan(0);
   });

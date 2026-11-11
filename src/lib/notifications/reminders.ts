@@ -1,5 +1,6 @@
 import "server-only";
 import { db } from "../db";
+import { mapConcurrent, NOTIFY_CONCURRENCY } from "../concurrency";
 import { notify } from "./notify";
 
 // A day plus margin: Vercel Hobby may run the job up to an hour late. dedupeKey prevents repeats.
@@ -27,22 +28,26 @@ export async function sendDeadlineReminders(now = new Date()) {
     },
   });
 
-  let sent = 0;
-  let skipped = 0;
-  for (const hw of homework) {
+  const due = homework.flatMap((hw) => {
     const handedIn = new Set(hw.submissions.map((s) => s.studentId));
-    for (const { studentId } of hw.group.enrollments) {
-      if (handedIn.has(studentId)) continue;
-      const created = await notify(
-        studentId,
-        "deadline",
-        { homeworkId: hw.id, homeworkTitle: hw.title, course: hw.group.course.title, dueAt: hw.dueAt.toISOString() },
-        // Includes the date, so a deadline the teacher moves gets its own reminder.
-        { dedupeKey: `deadline:${hw.id}:${hw.dueAt.toISOString()}` },
-      );
-      if (created) sent++;
-      else skipped++;
-    }
-  }
-  return { homework: homework.length, sent, skipped };
+    return hw.group.enrollments
+      .filter(({ studentId }) => !handedIn.has(studentId))
+      .map(({ studentId }) => ({ hw, studentId }));
+  });
+
+  // A few at a time, and one student's failure must not cost everyone after them their reminder.
+  const outcomes = await mapConcurrent(due, NOTIFY_CONCURRENCY, ({ hw, studentId }) =>
+    notify(
+      studentId,
+      "deadline",
+      { homeworkId: hw.id, homeworkTitle: hw.title, course: hw.group.course.title, dueAt: hw.dueAt.toISOString() },
+      // Includes the date, so a deadline the teacher moves gets its own reminder.
+      { dedupeKey: `deadline:${hw.id}:${hw.dueAt.toISOString()}` },
+    ),
+  );
+  const sent = outcomes.filter((o) => o.status === "fulfilled" && o.value).length;
+  const skipped = outcomes.filter((o) => o.status === "fulfilled" && !o.value).length;
+  const failed = outcomes.filter((o) => o.status === "rejected").length;
+  if (failed > 0) console.error(`[reminders] ${failed} deadline reminder(s) failed`);
+  return { homework: homework.length, sent, skipped, failed };
 }
