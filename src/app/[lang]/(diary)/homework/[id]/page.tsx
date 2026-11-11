@@ -232,7 +232,7 @@ function AttemptBody({ attempt, labels }: { attempt: HomeworkAttempt; labels: Di
           <ul className="space-y-1">
             {attempt.files.map((f) => (
               <li key={f.id} className="flex items-baseline gap-2">
-                <a href={`/api/files/${f.id}`} target="_blank" rel="noreferrer" className="truncate text-accent">
+                <a href={`/api/files/${f.id}`} target="_blank" rel="noreferrer" className="truncate py-1 text-accent">
                   {f.name}
                 </a>
                 <span className="shrink-0 text-xs text-muted">{formatBytes(f.size)}</span>

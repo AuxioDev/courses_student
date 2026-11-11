@@ -136,7 +136,7 @@ export function FileUploader({
           {files.map((file) => (
             <li key={file.id} className="flex items-center gap-3 px-3 py-2">
               <div className="min-w-0 flex-1">
-                <a href={`/api/files/${file.id}`} target="_blank" rel="noreferrer" className="block truncate text-sm font-medium text-accent">
+                <a href={`/api/files/${file.id}`} target="_blank" rel="noreferrer" className="block truncate py-1 text-sm font-medium text-accent">
                   {file.name}
                 </a>
                 <span className="text-xs text-muted">
