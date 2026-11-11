@@ -1,9 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { getStudentOrNull } from "@/lib/auth";
+import { clientIp, takeHit } from "@/lib/rate-limit";
 import { createUploadToken, storageDriver } from "@/lib/storage";
 import { MAX_FILE_BYTES, contentTypeFor } from "@/lib/upload-policy";
 import { checkNewFile, newStorageKey } from "@/lib/uploads";
+
+const UPLOAD_TOKENS_PER_15_MIN = 30;
 
 const bodySchema = z.object({
   homeworkId: z.string().min(1).max(64),
@@ -16,6 +19,12 @@ const bodySchema = z.object({
 export async function POST(request: NextRequest) {
   const student = await getStudentOrNull();
   if (!student) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+
+  // A token lets the browser write to the shared store without our server seeing the file, so handing them out
+  // is limited: 5 files for each of several homeworks is plenty, endless uploads are not.
+  if (!(await takeHit(`upload:${student.id}`, await clientIp(), UPLOAD_TOKENS_PER_15_MIN))) {
+    return NextResponse.json({ error: "uploadFailed" }, { status: 429 });
+  }
 
   const parsed = bodySchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "uploadFailed" }, { status: 400 });

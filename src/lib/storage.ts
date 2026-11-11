@@ -1,9 +1,9 @@
 import "server-only";
 import { createReadStream } from "node:fs";
-import { mkdir, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, readdir, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { Readable } from "node:stream";
-import { del, get, head } from "@vercel/blob";
+import { del, get, head, list } from "@vercel/blob";
 import { generateClientTokenFromReadWriteToken } from "@vercel/blob/client";
 
 // Homework files live in a private Vercel Blob store in production. Without
@@ -80,6 +80,37 @@ export async function readObjectStart(key: string, length = 512) {
   const { value } = await reader.read();
   await reader.cancel();
   return (value ?? new Uint8Array()).subarray(0, length);
+}
+
+export type StoredObject = { key: string; uploadedAt: Date };
+
+// Every stored homework file, for the sweep of files no row points at. Blob listing is paginated; the
+// page cap only bounds a runaway store, the sweep simply continues on the next run.
+const MAX_LIST_PAGES = 50;
+export async function listObjects(): Promise<StoredObject[]> {
+  const found: StoredObject[] = [];
+  if (storageDriver() === "blob") {
+    let cursor: string | undefined;
+    for (let page = 0; page < MAX_LIST_PAGES; page++) {
+      const result = await list({ prefix: "submissions/", limit: 1000, cursor });
+      for (const blob of result.blobs) if (isValidKey(blob.pathname)) found.push({ key: blob.pathname, uploadedAt: blob.uploadedAt });
+      if (!result.hasMore) break;
+      cursor = result.cursor;
+    }
+    return found;
+  }
+  async function walk(dir: string) {
+    for (const entry of await readdir(dir, { withFileTypes: true }).catch(() => [])) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) await walk(full);
+      else {
+        const key = path.relative(LOCAL_ROOT, full).split(path.sep).join("/");
+        if (isValidKey(key)) found.push({ key, uploadedAt: (await stat(full)).mtime });
+      }
+    }
+  }
+  await walk(path.join(LOCAL_ROOT, "submissions"));
+  return found;
 }
 
 export async function deleteObject(key: string) {
