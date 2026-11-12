@@ -36,7 +36,7 @@ export default async function LoginPage() {
             <p className="mt-1 text-sm text-muted">{t.login.subtitle}</p>
           </div>
           <ClearPrivateData />
-          <LoginForm labels={t.login} errors={t.errors} />
+          <LoginForm labels={t.login} errors={t.errors} passwordLabels={t.password} />
           <Link href={localePath(locale, "/forgot-password")} className="mt-4 text-center text-sm text-accent">
             {t.forgot.link}
           </Link>
