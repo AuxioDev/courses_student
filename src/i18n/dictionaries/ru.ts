@@ -343,6 +343,7 @@ export const ru: Dictionary = {
     security: "Безопасность",
     logoutEverywhere: "Выйти на всех устройствах",
     logoutEverywhereHint: "Используйте, если входили с чужого телефона или компьютера.",
+    timezoneSearch: "Найти часовой пояс…",
   },
   more: {
     title: "Ещё",

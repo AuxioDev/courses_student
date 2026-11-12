@@ -21,7 +21,7 @@ export function TermSwitcher({
 }) {
   if (terms.length < 2) return null;
   return (
-    <nav aria-label={label} className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1">
+    <nav aria-label={label} className="scroll-hint -mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1 [--scroll-cover:var(--bg)]">
       {terms.map((term) => {
         const active = term.id === selected;
         return (
@@ -29,7 +29,7 @@ export function TermSwitcher({
             key={term.id}
             href={localePath(locale, term.current ? path : `${path}?term=${term.id}`)}
             aria-current={active ? "page" : undefined}
-            className={`shrink-0 rounded-full border px-3 py-1.5 text-sm font-medium ${
+            className={`inline-flex min-h-11 shrink-0 items-center rounded-full border px-3 text-sm font-medium sm:min-h-8 ${
               active ? "border-accent bg-accent text-accent-ink" : "border-line bg-surface text-ink"
             }`}
           >

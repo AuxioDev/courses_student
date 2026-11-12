@@ -344,6 +344,7 @@ export const en = {
     security: "Security",
     logoutEverywhere: "Log out on all devices",
     logoutEverywhereHint: "Use this if you logged in on someone else's phone or computer.",
+    timezoneSearch: "Search timezones…",
   },
   more: {
     title: "More",

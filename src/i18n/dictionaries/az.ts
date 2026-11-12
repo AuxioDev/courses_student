@@ -349,6 +349,7 @@ export const az: Dictionary = {
     security: "Təhlükəsizlik",
     logoutEverywhere: "Bütün cihazlardan çıxış et",
     logoutEverywhereHint: "Başqasının telefonunda və ya kompüterində daxil olmusunuzsa, bundan istifadə edin.",
+    timezoneSearch: "Saat qurşağı axtar…",
   },
   more: {
     title: "Daha çox",

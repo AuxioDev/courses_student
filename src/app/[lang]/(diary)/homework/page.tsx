@@ -41,7 +41,7 @@ async function HomeworkList({ searchParams }: Pick<PageProps<"/[lang]/homework">
   return (
     <>
       <PageTitle title={t.homework.title} />
-      <div className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1">
+      <div className="scroll-hint -mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1 [--scroll-cover:var(--bg)]">
         {tabs.map((tb) => {
           const count = all.filter(tb.match).length;
           const active = tb.id === tab.id;

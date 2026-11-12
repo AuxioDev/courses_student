@@ -50,7 +50,7 @@ async function Profile() {
           <TimezoneForm
             current={student.timezone}
             timezones={timezones}
-            labels={{ timezone: t.profile.timezone, save: t.common.save, saving: t.common.saving }}
+            labels={{ timezone: t.profile.timezone, search: t.profile.timezoneSearch, save: t.common.save, saving: t.common.saving }}
             errors={t.errors}
             ok={t.ok}
           />

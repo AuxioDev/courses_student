@@ -9,7 +9,7 @@ export async function NotificationBell() {
   return (
     <Link
       href={localePath(locale, "/notifications")}
-      className="relative rounded-full p-2 text-ink"
+      className="relative flex h-11 w-11 items-center justify-center rounded-full text-ink"
       aria-label={unread ? fmt(t.header.unread, { n: unread }) : t.header.notifications}
     >
       <BellIcon />
@@ -24,7 +24,7 @@ export async function NotificationBell() {
 
 export function NotificationBellPlaceholder() {
   return (
-    <span className="p-2 text-muted">
+    <span className="flex h-11 w-11 items-center justify-center text-muted">
       <BellIcon />
     </span>
   );
