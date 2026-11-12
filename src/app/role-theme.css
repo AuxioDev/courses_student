@@ -58,7 +58,7 @@ body::before {
   opacity: 0.7;
   pointer-events: none;
   transform-origin: top;
-  animation: margin-draw 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation: margin-draw var(--dur-ambient) var(--ease-out) both;
 }
 @media (min-width: 1024px) {
   body::before {
@@ -73,7 +73,7 @@ main h1 {
   font-weight: 700;
   letter-spacing: -0.02em;
   background: var(--pen) left bottom / 100% 6px no-repeat;
-  animation: pen-write 0.9s 0.2s cubic-bezier(0.3, 0.7, 0.2, 1) both;
+  animation: pen-write var(--dur-slow) 0.2s var(--ease-out) both;
 }
 main h2 {
   font-weight: 650;
@@ -92,7 +92,7 @@ body .font-mono:is(.text-lg, .text-xl, .text-2xl, .text-3xl) {
   line-height: 1;
   transform: rotate(-3deg) scale(1.25);
   /* Written in from left to right. Marks are content, so this finishes within 0.6 s. */
-  animation: ink-write 0.35s var(--ease-out) 0.1s both;
+  animation: ink-write var(--dur-base) var(--ease-out) 0.1s both;
 }
 
 /* Caveat's digits are small for their size, and the smallest mark (the list on Today) was the hardest to read. */
@@ -127,7 +127,7 @@ li:nth-child(6) .font-mono:is(.text-lg, .text-xl, .text-2xl, .text-3xl) { animat
 
 /* The current tab gives a small pop when it becomes current. */
 nav a[aria-current="page"] svg {
-  animation: icon-pop 0.38s var(--ease-spring) both;
+  animation: icon-pop var(--dur-base) var(--ease-spring) both;
 }
 
 @keyframes ink-write {

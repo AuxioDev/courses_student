@@ -5,6 +5,7 @@ import { localePath } from "@/i18n/config";
 import { AppNav } from "@/components/app-nav";
 import { LanguageMenu } from "@/components/language-menu";
 import { OfflineBanner } from "@/components/pwa/offline-banner";
+import { PageTransition } from "@/components/page-transition";
 import { NotificationBell, NotificationBellPlaceholder } from "@/components/notification-bell";
 
 export default async function DiaryLayout({ children }: LayoutProps<"/[lang]">) {
@@ -35,7 +36,7 @@ export default async function DiaryLayout({ children }: LayoutProps<"/[lang]">) 
       </header>
       <main className="mx-auto max-w-2xl px-4 pt-5 sm:px-6 lg:max-w-5xl lg:pt-8">
         <OfflineBanner text={t.pwa.offline} />
-        {children}
+        <PageTransition>{children}</PageTransition>
       </main>
       <AppNav locale={locale} labels={labels} />
     </div>

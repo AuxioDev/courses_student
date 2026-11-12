@@ -78,7 +78,7 @@ export function InstallPrompt({ mode, labels }: { mode: "banner" | "card"; label
     <div
       className={
         mode === "banner"
-          ? "mb-6 rounded-2xl border border-accent/30 bg-accent-soft p-4"
+          ? "arrive-down mb-6 rounded-2xl border border-accent/30 bg-accent-soft p-4"
           : "mb-4 rounded-2xl border border-line bg-surface p-4"
       }
     >
