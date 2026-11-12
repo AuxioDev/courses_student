@@ -45,6 +45,12 @@ export const az: Dictionary = {
     samePassword: "Hazırkından fərqli şifrə seçin.",
     resetLinkInvalid: "Bu linkin vaxtı bitib və ya artıq istifadə olunub. Məktəbdən yeni link istəyin.",
     tooManyFiles: "Ən çox 5 fayl təhvil verə bilərsiniz.",
+    noteEmpty: "Əvvəlcə nəsə yazın.",
+    noteTooLong: "Qeyd ən çox 5000 simvol ola bilər.",
+    noteInvalid: "Qeyd saxlanıla bilmədi. Səhifəni yeniləyib yenidən cəhd edin.",
+    todoEmpty: "Nə etməli olduğunuzu yazın.",
+    todoTooLong: "Tapşırıq ən çox 300 simvol ola bilər.",
+    limitReached: "Limitə çatdınız. Əvvəlcə köhnə bir şeyi silin.",
   },
   ok: {
     emailSaved: "E-poçt ayarları yadda saxlanıldı.",
@@ -53,6 +59,8 @@ export const az: Dictionary = {
     submittedLate: "Göndərildi (son tarixdən sonra).",
     timezoneSaved: "Saat qurşağı yadda saxlanıldı.",
     passwordChanged: "Şifrə dəyişdirildi. Digər cihazlardan çıxış edildi.",
+    noteSaved: "Qeyd saxlanıldı.",
+    todoAdded: "Tapşırıq əlavə edildi.",
   },
   lesson: {
     join: "Dərsə qoşul",
@@ -175,6 +183,7 @@ export const az: Dictionary = {
       termLocked: "Bu semestr bağlanıb.",
       homeworkNotFound: "Tapşırıq tapılmadı.",
     },
+    removeConfirm: "Bu fayl silinsin?",
   },
   marks: {
     term: "Semestr",
@@ -204,6 +213,8 @@ export const az: Dictionary = {
     notePlaceholder: "Bu gün üçün qeyd yazın…",
     saveNote: "Qeydi saxla",
     noNotes: "Hələ qeyd yoxdur. Gündəlikdə istənilən günə də qeyd əlavə edə bilərsiniz.",
+    deleteNoteConfirm: "Bu qeyd silinsin?",
+    deleteTodoConfirm: "Bu tapşırıq silinsin?",
   },
   notifications: {
     render: {
@@ -226,6 +237,14 @@ export const az: Dictionary = {
       lesson_changed: "Dərs dəyişib",
       homework_returned: "Tapşırıq qaytarılıb",
     },
+  },
+  dialog: {
+    confirm: "Bəli, davam et",
+    cancel: "Ləğv et",
+  },
+  form: {
+    charsLeft: "{n} simvol qalıb",
+    charsOver: "{n} simvol artıqdır",
   },
   password: {
     changeTitle: "Şifrəni dəyiş",
@@ -318,6 +337,7 @@ export const az: Dictionary = {
     deletionHint: "Məktəb sorğuya baxır. Qiymət və davamiyyət kimi məktəb sənədləri saxlanılır.",
     deletionPending: "Silinmə {date} tarixində istənilib. Məktəb sorğuya baxacaq.",
     cancelDeletion: "Sorğunu ləğv et",
+    requestDeletionConfirm: "Məktəbdən hesabınızı və məlumatlarınızı silməsini xahiş etmək istəyirsiniz? Administrator sorğuya baxacaq, o vaxta qədər onu ləğv edə bilərsiniz.",
   },
   profile: {
     feedbackTitle: "Rəy",

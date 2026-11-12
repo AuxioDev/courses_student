@@ -337,20 +337,23 @@ export async function removeUpload(fileId: string): Promise<{ error?: UploadErro
 const MAX_NOTES = 1000;
 const MAX_TODOS = 500;
 
-const noteSchema = z.object({
-  date: z.string().refine(isDayKey),
-  text: z.string().trim().min(1).max(5_000),
-});
+const NOTE_MAX = 5_000;
+const TODO_MAX = 300;
 
-export async function addNote(formData: FormData) {
+// Says what went wrong instead of dropping the input: the form shows the message and keeps what was typed.
+export async function addNote(_prev: FormState, formData: FormData): Promise<FormState> {
   const student = await getCurrentStudent();
-  const parsed = noteSchema.safeParse({ date: formData.get("date"), text: formData.get("text") });
-  if (!parsed.success) return;
-  if ((await db.studentNote.count({ where: { studentId: student.id } })) >= MAX_NOTES) return;
+  const text = String(formData.get("text") ?? "").trim();
+  const date = formData.get("date");
+  if (!text) return { error: "noteEmpty" };
+  if (text.length > NOTE_MAX) return { error: "noteTooLong" };
+  if (typeof date !== "string" || !isDayKey(date)) return { error: "noteInvalid" };
+  if ((await db.studentNote.count({ where: { studentId: student.id } })) >= MAX_NOTES) return { error: "limitReached" };
   await db.studentNote.create({
-    data: { studentId: student.id, date: new Date(`${parsed.data.date}T00:00:00Z`), text: parsed.data.text },
+    data: { studentId: student.id, date: new Date(`${date}T00:00:00Z`), text },
   });
   refresh();
+  return { ok: "noteSaved" };
 }
 
 export async function deleteNote(formData: FormData) {
@@ -362,24 +365,18 @@ export async function deleteNote(formData: FormData) {
 
 // ---------- To-dos ----------
 
-const todoSchema = z.object({
-  title: z.string().trim().min(1).max(300),
-  dueAt: z
-    .string()
-    .optional()
-    .transform((s) => (s && isDayKey(s) ? new Date(`${s}T00:00:00Z`) : null)),
-});
-
-export async function addTodo(formData: FormData) {
+export async function addTodo(_prev: FormState, formData: FormData): Promise<FormState> {
   const student = await getCurrentStudent();
-  const parsed = todoSchema.safeParse({
-    title: formData.get("title"),
-    dueAt: formData.get("dueAt") || undefined,
-  });
-  if (!parsed.success) return;
-  if ((await db.studentTodo.count({ where: { studentId: student.id } })) >= MAX_TODOS) return;
-  await db.studentTodo.create({ data: { studentId: student.id, ...parsed.data } });
+  const title = String(formData.get("title") ?? "").trim();
+  const due = formData.get("dueAt");
+  if (!title) return { error: "todoEmpty" };
+  if (title.length > TODO_MAX) return { error: "todoTooLong" };
+  if ((await db.studentTodo.count({ where: { studentId: student.id } })) >= MAX_TODOS) return { error: "limitReached" };
+  // A due date that is not a real day is left out rather than refusing the to-do.
+  const dueAt = typeof due === "string" && isDayKey(due) ? new Date(`${due}T00:00:00Z`) : null;
+  await db.studentTodo.create({ data: { studentId: student.id, title, dueAt } });
   refresh();
+  return { ok: "todoAdded" };
 }
 
 export async function toggleTodo(formData: FormData) {

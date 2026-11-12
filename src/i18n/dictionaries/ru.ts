@@ -45,6 +45,12 @@ export const ru: Dictionary = {
     samePassword: "Выберите пароль, отличный от текущего.",
     resetLinkInvalid: "Срок действия ссылки истёк, или она уже использована. Попросите в школе новую.",
     tooManyFiles: "Можно сдать не больше 5 файлов.",
+    noteEmpty: "Сначала что-нибудь напишите.",
+    noteTooLong: "Заметка — не более 5000 символов.",
+    noteInvalid: "Не удалось сохранить заметку. Обновите страницу и попробуйте снова.",
+    todoEmpty: "Напишите, что нужно сделать.",
+    todoTooLong: "Задача — не более 300 символов.",
+    limitReached: "Достигнут лимит. Сначала удалите что-нибудь старое.",
   },
   ok: {
     emailSaved: "Настройки почты сохранены.",
@@ -53,6 +59,8 @@ export const ru: Dictionary = {
     submittedLate: "Отправлено (после срока).",
     timezoneSaved: "Часовой пояс сохранён.",
     passwordChanged: "Пароль изменён. На других устройствах выполнен выход.",
+    noteSaved: "Заметка сохранена.",
+    todoAdded: "Задача добавлена.",
   },
   lesson: {
     join: "Подключиться к уроку",
@@ -169,6 +177,7 @@ export const ru: Dictionary = {
       termLocked: "Этот семестр закрыт.",
       homeworkNotFound: "Задание не найдено.",
     },
+    removeConfirm: "Удалить этот файл?",
   },
   marks: {
     term: "Семестр",
@@ -198,6 +207,8 @@ export const ru: Dictionary = {
     notePlaceholder: "Заметка на сегодня…",
     saveNote: "Сохранить заметку",
     noNotes: "Заметок пока нет. Их также можно добавлять к любому дню в Дневнике.",
+    deleteNoteConfirm: "Удалить эту заметку?",
+    deleteTodoConfirm: "Удалить эту задачу?",
   },
   notifications: {
     render: {
@@ -220,6 +231,14 @@ export const ru: Dictionary = {
       lesson_changed: "Урок изменён",
       homework_returned: "Задание возвращено",
     },
+  },
+  dialog: {
+    confirm: "Да, продолжить",
+    cancel: "Отмена",
+  },
+  form: {
+    charsLeft: "Осталось символов: {n}",
+    charsOver: "Лишних символов: {n}",
   },
   password: {
     changeTitle: "Сменить пароль",
@@ -312,6 +331,7 @@ export const ru: Dictionary = {
     deletionHint: "Школа рассмотрит запрос. Школьные документы, такие как оценки и посещаемость, сохраняются.",
     deletionPending: "Удаление запрошено {date}. Школа рассмотрит запрос.",
     cancelDeletion: "Отменить запрос",
+    requestDeletionConfirm: "Попросить школу удалить ваш аккаунт и данные? Администратор рассмотрит запрос, до этого его можно отменить.",
   },
   profile: {
     feedbackTitle: "Обратная связь",

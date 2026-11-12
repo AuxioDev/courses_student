@@ -14,6 +14,7 @@ import {
   type UploadErrorCode,
 } from "@/lib/upload-policy";
 import { TrashIcon } from "./icons";
+import { useConfirm, type ConfirmLabels } from "@/components/confirm-dialog";
 
 // Files uploaded but not handed in yet (they go in with the next Submit).
 export type UploadedFile = { id: string; name: string; size: number };
@@ -72,11 +73,13 @@ export function FileUploader({
   homeworkId,
   files,
   labels,
+  confirmLabels,
   onBusyChange,
 }: {
   homeworkId: string;
   files: UploadedFile[];
   labels: Dictionary["files"];
+  confirmLabels: ConfirmLabels;
   // The form disables "Submit" while a file is still going up: handing in before the upload is
   // recorded would leave the file out of the hand-in.
   onBusyChange?: (busy: boolean) => void;
@@ -85,6 +88,7 @@ export function FileUploader({
   const [progress, setProgress] = useState<{ name: string; pct: number } | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
   const [removing, startRemoving] = useTransition();
+  const { confirm, dialog } = useConfirm(confirmLabels);
   const busy = progress !== null || removing;
   useEffect(() => onBusyChange?.(busy), [busy, onBusyChange]);
   const vars = (name = "") => ({ name, mb: MB, max: MAX_FILES_PER_HOMEWORK });
@@ -121,7 +125,8 @@ export function FileUploader({
     if (input.current) input.current.value = "";
   }
 
-  function onRemove(file: UploadedFile) {
+  async function onRemove(file: UploadedFile) {
+    if (!(await confirm({ title: file.name, message: labels.removeConfirm, danger: true }))) return;
     startRemoving(async () => {
       const result = await removeUpload(file.id);
       setErrors(result.error ? [fmt(labels.errors[result.error], vars(file.name))] : []);
@@ -189,6 +194,7 @@ export function FileUploader({
           ))}
         </ul>
       )}
+      {dialog}
     </div>
   );
 }

@@ -158,6 +158,7 @@ async function HomeworkDetail({ params }: Pick<PageProps<"/[lang]/homework/[id]"
                     : null
                 }
                 fileLabels={t.files}
+                dialogLabels={t.dialog}
                 attemptLabels={t.attempts}
                 submitLabel={submission ? t.homework.submitAgain : t.homework.submit}
                 labels={t.homework}

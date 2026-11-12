@@ -46,6 +46,12 @@ export const en = {
     samePassword: "Choose a password different from the current one.",
     resetLinkInvalid: "This link has expired or was already used. Ask your school for a new one.",
     tooManyFiles: "You can hand in at most 5 files.",
+    noteEmpty: "Write something first.",
+    noteTooLong: "A note can be at most 5000 characters.",
+    noteInvalid: "This note couldn't be saved. Reload the page and try again.",
+    todoEmpty: "Write what you need to do.",
+    todoTooLong: "A to-do can be at most 300 characters.",
+    limitReached: "You've reached the limit. Delete something old first.",
   },
   ok: {
     emailSaved: "Email settings saved.",
@@ -54,6 +60,8 @@ export const en = {
     submittedLate: "Submitted (after the deadline).",
     timezoneSaved: "Timezone saved.",
     passwordChanged: "Password changed. Other devices were signed out.",
+    noteSaved: "Note saved.",
+    todoAdded: "To-do added.",
   },
   lesson: {
     join: "Join lesson",
@@ -170,6 +178,7 @@ export const en = {
       termLocked: "This term is locked.",
       homeworkNotFound: "Homework not found.",
     },
+    removeConfirm: "Remove this file?",
   },
   marks: {
     term: "Term",
@@ -199,6 +208,8 @@ export const en = {
     notePlaceholder: "Write a note for today…",
     saveNote: "Save note",
     noNotes: "No notes yet. You can also add notes to any day in the Diary.",
+    deleteNoteConfirm: "Delete this note?",
+    deleteTodoConfirm: "Delete this to-do?",
   },
   notifications: {
     render: {
@@ -221,6 +232,14 @@ export const en = {
       lesson_changed: "Lesson changed",
       homework_returned: "Homework returned",
     },
+  },
+  dialog: {
+    confirm: "Yes, continue",
+    cancel: "Cancel",
+  },
+  form: {
+    charsLeft: "{n} characters left",
+    charsOver: "{n} characters too many",
   },
   password: {
     changeTitle: "Change password",
@@ -313,6 +332,7 @@ export const en = {
     deletionHint: "The school reviews the request. School records such as marks and attendance are kept.",
     deletionPending: "Deletion requested on {date}. The school will review it.",
     cancelDeletion: "Cancel request",
+    requestDeletionConfirm: "Ask the school to delete your account and data? An admin will review the request, and you can cancel it until then.",
   },
   profile: {
     feedbackTitle: "Feedback",

@@ -9,8 +9,10 @@ import { LessonCard } from "@/components/lesson-card";
 import { Badge, Card, Empty, Section } from "@/components/ui";
 import { ChevronLeft, ChevronRight, TrashIcon } from "@/components/icons";
 import { formatScore, homeworkStateTone } from "@/components/status";
-import { addNote, deleteNote } from "@/app/actions";
+import { deleteNote } from "@/app/actions";
 import { SubmitButton } from "@/components/submit-button";
+import { ConfirmForm } from "@/components/confirm-dialog";
+import { AddNoteForm } from "@/components/note-forms";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getI18n();
@@ -116,22 +118,24 @@ async function DiaryDay({ searchParams }: Pick<PageProps<"/[lang]/diary">, "sear
                   <li key={note.id}>
                     <Card className="flex items-start justify-between gap-2 bg-warn-soft/40">
                       <p className="whitespace-pre-wrap text-sm">{note.text}</p>
-                      <form action={deleteNote}>
+                      <ConfirmForm action={deleteNote} message={t.notes.deleteNoteConfirm} labels={t.dialog}>
                         <input type="hidden" name="id" value={note.id} />
-                        <button type="submit" className="icon-btn" aria-label={t.diary.deleteNote}>
+                        <SubmitButton className="icon-btn" aria-label={t.diary.deleteNote}>
                           <TrashIcon width={18} height={18} />
-                        </button>
-                      </form>
+                        </SubmitButton>
+                      </ConfirmForm>
                     </Card>
                   </li>
                 ))}
               </ul>
             )}
-            <form action={addNote} className="flex gap-2">
-              <input type="hidden" name="date" value={key} />
-              <input name="text" required placeholder={t.diary.notePlaceholder} aria-label={t.diary.notePlaceholder} className="field min-w-0 flex-1" />
-              <SubmitButton className="btn shrink-0">{t.common.add}</SubmitButton>
-            </form>
+            <AddNoteForm
+              date={key}
+              placeholder={t.diary.notePlaceholder}
+              submit={t.common.add}
+              errors={t.errors}
+              counter={t.form}
+            />
             <p className="mt-1 text-xs text-muted">{t.diary.notesPrivate}</p>
           </Section>
         </div>

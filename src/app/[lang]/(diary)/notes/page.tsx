@@ -7,8 +7,10 @@ import { getI18n } from "@/i18n";
 import { localePath } from "@/i18n/config";
 import { Card, Empty, PageTitle, Section } from "@/components/ui";
 import { CheckIcon, TrashIcon } from "@/components/icons";
-import { addNote, addTodo, deleteNote, deleteTodo, toggleTodo } from "@/app/actions";
+import { deleteNote, deleteTodo, toggleTodo } from "@/app/actions";
 import { SubmitButton } from "@/components/submit-button";
+import { ConfirmForm } from "@/components/confirm-dialog";
+import { AddNoteForm, AddTodoForm } from "@/components/note-forms";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getI18n();
@@ -34,11 +36,13 @@ async function Notes() {
 
       <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-8">
         <Section title={t.notes.todos}>
-          <form action={addTodo} className="mb-3 flex flex-wrap gap-2">
-            <input name="title" required placeholder={t.notes.addTodo} aria-label={t.notes.addTodo} className="field basis-full" />
-            <input name="dueAt" type="date" className="field min-w-0 flex-1" aria-label={t.notes.dueDate} />
-            <SubmitButton className="btn shrink-0">{t.common.add}</SubmitButton>
-          </form>
+          <AddTodoForm
+            placeholder={t.notes.addTodo}
+            dueLabel={t.notes.dueDate}
+            submit={t.common.add}
+            errors={t.errors}
+            counter={t.form}
+          />
           {todos.length === 0 ? (
             <Empty>{t.notes.noTodos}</Empty>
           ) : (
@@ -47,8 +51,7 @@ async function Notes() {
                 <div key={todo.id} className="flex items-center gap-3 px-4 py-2.5">
                   <form action={toggleTodo}>
                     <input type="hidden" name="id" value={todo.id} />
-                    <button
-                      type="submit"
+                    <SubmitButton
                       aria-label={todo.done ? t.notes.markNotDone : t.notes.markDone}
                       className="-m-2.5 flex h-11 w-11 items-center justify-center"
                     >
@@ -59,7 +62,7 @@ async function Notes() {
                       >
                         {todo.done && <CheckIcon width={16} height={16} strokeWidth={3} />}
                       </span>
-                    </button>
+                    </SubmitButton>
                   </form>
                   <div className={`min-w-0 flex-1 ${todo.done ? "text-muted line-through" : ""}`}>
                     <p className="text-sm">{todo.title}</p>
@@ -69,12 +72,12 @@ async function Notes() {
                       </p>
                     )}
                   </div>
-                  <form action={deleteTodo}>
+                  <ConfirmForm action={deleteTodo} message={t.notes.deleteTodoConfirm} labels={t.dialog}>
                     <input type="hidden" name="id" value={todo.id} />
-                    <button type="submit" className="icon-btn" aria-label={t.notes.deleteTodo}>
+                    <SubmitButton className="icon-btn" aria-label={t.notes.deleteTodo}>
                       <TrashIcon width={18} height={18} />
-                    </button>
-                  </form>
+                    </SubmitButton>
+                  </ConfirmForm>
                 </div>
               ))}
             </Card>
@@ -82,11 +85,14 @@ async function Notes() {
         </Section>
 
         <Section title={t.notes.notes}>
-          <form action={addNote} className="mb-3 space-y-2">
-            <input type="hidden" name="date" value={today} />
-            <textarea name="text" required rows={3} placeholder={t.notes.notePlaceholder} aria-label={t.notes.notePlaceholder} className="field resize-y" />
-            <SubmitButton className="btn">{t.notes.saveNote}</SubmitButton>
-          </form>
+          <AddNoteForm
+            multiline
+            date={today}
+            placeholder={t.notes.notePlaceholder}
+            submit={t.notes.saveNote}
+            errors={t.errors}
+            counter={t.form}
+          />
           {notes.length === 0 ? (
             <Empty>{t.notes.noNotes}</Empty>
           ) : (
@@ -106,12 +112,12 @@ async function Notes() {
                         </Link>
                         <p className="mt-1 whitespace-pre-wrap text-sm">{note.text}</p>
                       </div>
-                      <form action={deleteNote}>
+                      <ConfirmForm action={deleteNote} message={t.notes.deleteNoteConfirm} labels={t.dialog}>
                         <input type="hidden" name="id" value={note.id} />
-                        <button type="submit" className="icon-btn" aria-label={t.diary.deleteNote}>
+                        <SubmitButton className="icon-btn" aria-label={t.diary.deleteNote}>
                           <TrashIcon width={18} height={18} />
-                        </button>
-                      </form>
+                        </SubmitButton>
+                      </ConfirmForm>
                     </Card>
                   </li>
                 );

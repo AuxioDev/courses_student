@@ -566,23 +566,27 @@ describe("removing an uploaded file", () => {
 });
 
 describe("notes and to-dos", () => {
-  it("adds a note on a day, trimmed", async () => {
+  it("adds a note on a day, trimmed, and says it was saved", async () => {
     const w = await setup();
-    await actions.addNote(form({ date: "2026-11-12", text: "  remember the book  " }));
+    expect(await actions.addNote(undefined, form({ date: "2026-11-12", text: "  remember the book  " }))).toEqual({ ok: "noteSaved" });
     expect(await db.studentNote.findFirstOrThrow()).toMatchObject({ studentId: w.student.id, text: "remember the book" });
     expect((await db.studentNote.findFirstOrThrow()).date.toISOString()).toBe("2026-11-12T00:00:00.000Z");
   });
 
-  it("ignores a note with a bad date or no text, and stops at the limit", async () => {
-    const w = await setup();
-    await actions.addNote(form({ date: "2026-02-30", text: "x" }));
-    await actions.addNote(form({ date: "tomorrow", text: "x" }));
-    await actions.addNote(form({ date: "2026-11-12", text: "   " }));
-    await actions.addNote(form({ date: "2026-11-12", text: "x".repeat(5001) }));
-    expect(await db.studentNote.count()).toBe(0);
+  it("refuses a note with a bad date, no text or too much text, and says why", async () => {
+    await setup();
+    expect(await actions.addNote(undefined, form({ date: "2026-02-30", text: "x" }))).toEqual({ error: "noteInvalid" });
+    expect(await actions.addNote(undefined, form({ date: "tomorrow", text: "x" }))).toEqual({ error: "noteInvalid" });
+    expect(await actions.addNote(undefined, form({ date: "2026-11-12", text: "   " }))).toEqual({ error: "noteEmpty" });
+    expect(await actions.addNote(undefined, form({ date: "2026-11-12", text: "x".repeat(5001) }))).toEqual({ error: "noteTooLong" });
+    expect(await actions.addNote(undefined, form({ date: "2026-11-12", text: "x".repeat(5000) }))).toEqual({ ok: "noteSaved" });
+    expect(await db.studentNote.count()).toBe(1);
+  });
 
+  it("stops adding notes at the limit, and says so", async () => {
+    const w = await setup();
     await db.studentNote.createMany({ data: Array.from({ length: 1000 }, () => ({ studentId: w.student.id, date: new Date("2026-11-12"), text: "n" })) });
-    await actions.addNote(form({ date: "2026-11-12", text: "one too many" }));
+    expect(await actions.addNote(undefined, form({ date: "2026-11-12", text: "one too many" }))).toEqual({ error: "limitReached" });
     expect(await db.studentNote.count()).toBe(1000);
   });
 
@@ -599,10 +603,9 @@ describe("notes and to-dos", () => {
 
   it("adds a to-do with or without a day, and drops an invalid day", async () => {
     await setup();
-    await actions.addTodo(form({ title: "  read chapter 3 ", dueAt: "2026-11-15" }));
-    await actions.addTodo(form({ title: "no day" }));
-    await actions.addTodo(form({ title: "bad day", dueAt: "2026-13-45" }));
-    await actions.addTodo(form({ title: "   " }));
+    expect(await actions.addTodo(undefined, form({ title: "  read chapter 3 ", dueAt: "2026-11-15" }))).toEqual({ ok: "todoAdded" });
+    await actions.addTodo(undefined, form({ title: "no day" }));
+    await actions.addTodo(undefined, form({ title: "bad day", dueAt: "2026-13-45" }));
     const todos = await db.studentTodo.findMany({ orderBy: { createdAt: "asc" } });
     expect(todos.map((t) => [t.title, t.dueAt?.toISOString().slice(0, 10) ?? null])).toEqual([
       ["read chapter 3", "2026-11-15"],
@@ -611,10 +614,18 @@ describe("notes and to-dos", () => {
     ]);
   });
 
-  it("stops adding to-dos at the limit", async () => {
+  it("refuses an empty or too long to-do, and says why", async () => {
+    await setup();
+    expect(await actions.addTodo(undefined, form({ title: "   " }))).toEqual({ error: "todoEmpty" });
+    expect(await actions.addTodo(undefined, form({ title: "x".repeat(301) }))).toEqual({ error: "todoTooLong" });
+    expect(await actions.addTodo(undefined, form({ title: "x".repeat(300) }))).toEqual({ ok: "todoAdded" });
+    expect(await db.studentTodo.count()).toBe(1);
+  });
+
+  it("stops adding to-dos at the limit, and says so", async () => {
     const w = await setup();
     await db.studentTodo.createMany({ data: Array.from({ length: 500 }, () => ({ studentId: w.student.id, title: "t" })) });
-    await actions.addTodo(form({ title: "one too many" }));
+    expect(await actions.addTodo(undefined, form({ title: "one too many" }))).toEqual({ error: "limitReached" });
     expect(await db.studentTodo.count()).toBe(500);
   });
 

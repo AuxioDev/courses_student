@@ -5,6 +5,8 @@ import type { Dictionary } from "@/i18n/dictionaries/en";
 import { fmt } from "@/i18n/format";
 import { submitHomework } from "@/app/actions";
 import { FileUploader, type UploadedFile } from "@/components/file-uploader";
+import { FormMessage } from "@/components/form-kit";
+import { SubmitButton } from "@/components/submit-button";
 
 type Draft = { content: string; links: string; savedAt: number };
 
@@ -55,6 +57,7 @@ export function SubmitForm({
   keepFrom,
   labels,
   fileLabels,
+  dialogLabels,
   attemptLabels,
   errors,
   ok,
@@ -69,6 +72,7 @@ export function SubmitForm({
   keepFrom: { number: number; names: string[] } | null;
   labels: Dictionary["homework"];
   fileLabels: Dictionary["files"];
+  dialogLabels: Dictionary["dialog"];
   attemptLabels: Dictionary["attempts"];
   errors: Dictionary["errors"];
   ok: Dictionary["ok"];
@@ -77,7 +81,10 @@ export function SubmitForm({
   const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [draftStatus, setDraftStatus] = useState<"none" | "saved" | "dismissed">("none");
   const [uploading, setUploading] = useState(false);
-  const [state, action, pending] = useActionState(async (prev: Parameters<typeof submitHomework>[0], data: FormData) => {
+  // What was sent, so a refusal can put it back: React empties the form once the action is done.
+  const sent = useRef<{ content: string; links: string } | null>(null);
+  const [state, action] = useActionState(async (prev: Parameters<typeof submitHomework>[0], data: FormData) => {
+    sent.current = { content: String(data.get("content") ?? ""), links: String(data.get("links") ?? "") };
     // A save still waiting from the last keystroke would otherwise land after the hand-in.
     clearTimeout(saveTimer.current);
     const result = await submitHomework(prev, data);
@@ -98,6 +105,12 @@ export function SubmitForm({
     saved !== null &&
     saved.savedAt > lastSubmittedAt &&
     (saved.content !== defaultContent || saved.links !== defaultLinks);
+
+  useEffect(() => {
+    if (!state?.error || !sent.current) return;
+    if (content.current) content.current.value = sent.current.content;
+    if (links.current) links.current.value = sent.current.links;
+  }, [state]);
 
   // Put a newer draft back into the fields (DOM only, no state).
   const restoredFor = useRef<string | null>(null);
@@ -164,12 +177,12 @@ export function SubmitForm({
           </span>
         </label>
       )}
-      <FileUploader homeworkId={homeworkId} files={files} labels={fileLabels} onBusyChange={setUploading} />
-      {state?.error && <p className="rounded-xl bg-bad-soft px-3 py-2 text-sm text-bad">{errors[state.error]}</p>}
-      {state?.ok && <p className="rounded-xl bg-good-soft px-3 py-2 text-sm text-good">{ok[state.ok]}</p>}
-      <button type="submit" disabled={pending || uploading} className="btn w-full">
-        {pending ? labels.submitting : submitLabel}
-      </button>
+      <FileUploader homeworkId={homeworkId} files={files} labels={fileLabels} confirmLabels={dialogLabels} onBusyChange={setUploading} />
+      {state?.error && <FormMessage kind="error">{errors[state.error]}</FormMessage>}
+      {state?.ok && <FormMessage kind="success">{ok[state.ok]}</FormMessage>}
+      <SubmitButton className="btn w-full" disabled={uploading} pendingLabel={labels.submitting}>
+        {submitLabel}
+      </SubmitButton>
     </form>
   );
 }

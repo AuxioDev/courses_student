@@ -13,6 +13,7 @@ import { NotificationSettings } from "./notification-settings";
 import { getNotificationPreferences } from "@/lib/data";
 import { InstallPrompt } from "@/components/pwa/install-prompt";
 import { SubmitButton } from "@/components/submit-button";
+import { ConfirmForm } from "@/components/confirm-dialog";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getI18n();
@@ -92,10 +93,10 @@ async function Profile() {
                 <SubmitButton className="btn-ghost">{t.privacy.cancelDeletion}</SubmitButton>
               </form>
             ) : (
-              <form action={requestDeletion}>
+              <ConfirmForm action={requestDeletion} message={t.privacy.requestDeletionConfirm} labels={t.dialog}>
                 <p className="mb-2 text-xs text-muted">{t.privacy.deletionHint}</p>
                 <SubmitButton className="btn-ghost text-bad">{t.privacy.requestDeletion}</SubmitButton>
-              </form>
+              </ConfirmForm>
             )}
           </div>
           <Link href={localePath(locale, "/privacy")} className="mt-3 inline-flex min-h-11 items-center text-sm text-accent sm:min-h-6">
