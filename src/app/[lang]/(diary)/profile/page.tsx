@@ -10,6 +10,7 @@ import { formatDateTime } from "@/lib/dates";
 import { PasswordForm } from "@/components/password-form";
 import { TimezoneForm } from "./timezone-form";
 import { NotificationSettings } from "./notification-settings";
+import { ThemeForm } from "./theme-form";
 import { getNotificationPreferences } from "@/lib/data";
 import { InstallPrompt } from "@/components/pwa/install-prompt";
 import { SubmitButton } from "@/components/submit-button";
@@ -50,6 +51,11 @@ async function Profile() {
 
           <Section title={t.profile.preferences}>
             <div className="space-y-3">
+              <Card>
+                <ThemeForm
+                  labels={{ theme: t.profile.theme, light: t.profile.themeLight, dark: t.profile.themeDark, system: t.profile.themeSystem }}
+                />
+              </Card>
               <Card>
                 <TimezoneForm
                   current={student.timezone}

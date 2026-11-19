@@ -351,6 +351,10 @@ export const az: Dictionary = {
     logoutEverywhereHint: "Başqasının telefonunda və ya kompüterində daxil olmusunuzsa, bundan istifadə edin.",
     timezoneSearch: "Saat qurşağı axtar…",
     preferences: "Parametrlər",
+    theme: "Tema",
+    themeLight: "Açıq",
+    themeDark: "Tünd",
+    themeSystem: "Sistem",
     dangerZone: "Təhlükəli zona",
   },
   more: {

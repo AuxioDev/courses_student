@@ -346,6 +346,10 @@ export const en = {
     logoutEverywhereHint: "Use this if you logged in on someone else's phone or computer.",
     timezoneSearch: "Search timezones…",
     preferences: "Preferences",
+    theme: "Theme",
+    themeLight: "Light",
+    themeDark: "Dark",
+    themeSystem: "System",
     dangerZone: "Danger zone",
   },
   more: {

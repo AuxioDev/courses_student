@@ -345,6 +345,10 @@ export const ru: Dictionary = {
     logoutEverywhereHint: "Используйте, если входили с чужого телефона или компьютера.",
     timezoneSearch: "Найти часовой пояс…",
     preferences: "Настройки",
+    theme: "Тема",
+    themeLight: "Светлая",
+    themeDark: "Тёмная",
+    themeSystem: "Как в системе",
     dangerZone: "Опасная зона",
   },
   more: {

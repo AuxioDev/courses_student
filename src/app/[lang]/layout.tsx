@@ -7,6 +7,7 @@ import "../globals.css";
 import "../role-theme.css";
 import "../motion.css";
 import { ServiceWorkerRegister } from "@/components/pwa/sw-register";
+import { ThemeBoot } from "@/components/theme-boot";
 
 const bodyFont = Inter({
   // The shared stylesheet names its sans and mono variables after Geist, so this keeps that name.
@@ -42,8 +43,9 @@ export const viewport: Viewport = {
 
 export default async function RootLayout({ children }: LayoutProps<"/[lang]">) {
   return (
-    <html lang={await lang()} className={`${bodyFont.variable} h-full antialiased`}>
+    <html lang={await lang()} className={`${bodyFont.variable} h-full antialiased`} suppressHydrationWarning>
       <body className="min-h-full font-sans">
+        <ThemeBoot />
         {children}
         <ServiceWorkerRegister />
       </body>

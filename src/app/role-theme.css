@@ -5,6 +5,7 @@
    This file is unlayered, so it wins over Tailwind utilities of equal specificity.
    Contrast is checked by src/lib/__tests__/contrast.test.ts. */
 :root {
+  color-scheme: light;
   --bg: #f6f7fb;
   --surface: #ffffff;
   --surface-2: #eef1f7;
@@ -34,7 +35,8 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
     --bg: #0d1220;
     --surface: #151b2c;
     --surface-2: #1d2538;
@@ -59,6 +61,34 @@
     --shadow-2: 0 8px 24px rgb(0 0 0 / 0.45);
     --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%239aa4bb' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 8l5 5 5-5'/%3E%3C/svg%3E");
   }
+}
+
+/* A choice made in Profile (data-theme, set before first paint by the script in the root layout) beats the device setting. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0d1220;
+  --surface: #151b2c;
+  --surface-2: #1d2538;
+  --ink: #e8ecf5;
+  --muted: #9aa4bb;
+  --line: #283149;
+  --accent: #8ea2ff;
+  --accent-ink: #0d1220;
+  --accent-soft: #1f2a52;
+  --secondary: #4fd1c5;
+  --info: #6cb5f0;
+  --info-soft: #142d44;
+  --good: #4cc68a;
+  --good-soft: #15352a;
+  --warn: #f2b45a;
+  --warn-soft: #3a2c14;
+  --bad: #ff8f8a;
+  --bad-soft: #43201f;
+  --accent-hover: #a5b4ff;
+  --bad-hover: #ffa7a2;
+  --shadow-1: none;
+  --shadow-2: 0 8px 24px rgb(0 0 0 / 0.45);
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%239aa4bb' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 8l5 5 5-5'/%3E%3C/svg%3E");
 }
 
 body {
