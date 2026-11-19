@@ -7,7 +7,7 @@ import { dayKey, dayRange, formatDayKey, relativeDue } from "@/lib/dates";
 import { fmt, getI18n } from "@/i18n";
 import { localePath } from "@/i18n/config";
 import { LessonCard } from "@/components/lesson-card";
-import { Badge, Card, Empty, PageTitle, Section } from "@/components/ui";
+import { Badge, Card, Empty, PageTitle, Section } from "@/components/diary-ui";
 import { formatScore, homeworkStateTone } from "@/components/status";
 
 const SOON_MS = 3 * 24 * 60 * 60 * 1000;
@@ -47,7 +47,7 @@ async function Today() {
   const weekAgo = now.getTime() - 7 * 24 * 60 * 60 * 1000;
   const newMarks = marks.filter((m) => m.createdAt.getTime() > weekAgo);
   const allLink = (path: string) => (
-    <Link href={localePath(locale, path)} className="inline-flex min-h-11 min-w-11 items-center justify-end text-sm text-accent sm:min-h-6">
+    <Link href={localePath(locale, path)} className="inline-flex min-h-11 min-w-11 items-center justify-end text-sm font-medium text-accent hover:underline sm:min-h-6">
       {t.common.all}
     </Link>
   );
@@ -63,7 +63,7 @@ async function Today() {
         <Section
           title={t.attendance.alertsTitle}
           action={
-            <Link href={localePath(locale, "/attendance")} className="inline-flex min-h-11 min-w-11 items-center justify-end text-sm text-accent sm:min-h-6">
+            <Link href={localePath(locale, "/attendance")} className="inline-flex min-h-11 min-w-11 items-center justify-end text-sm font-medium text-accent hover:underline sm:min-h-6">
               {t.common.all}
             </Link>
           }
@@ -83,7 +83,7 @@ async function Today() {
         </Section>
       )}
 
-      <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-8">
+      <div className="md:grid md:grid-cols-2 md:items-start md:gap-8">
         <div>
           <Section title={t.today.lessons}>
             {lessons.length === 0 ? (

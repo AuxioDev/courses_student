@@ -4,7 +4,7 @@ import { getMarksByCourse, resolveTerm } from "@/lib/data";
 import { formatDayKey, dayKey } from "@/lib/dates";
 import { averageBand, formatAverage } from "@/lib/grading";
 import { fmt, getI18n, plural } from "@/i18n";
-import { Card, Empty, PageTitle } from "@/components/ui";
+import { Card, Empty, PageTitle } from "@/components/diary-ui";
 import { formatScore } from "@/components/status";
 import { TermSwitcher } from "@/components/term-switcher";
 
@@ -48,7 +48,7 @@ async function Marks({ searchParams }: Pick<PageProps<"/[lang]/marks">, "searchP
         currentLabel={t.marks.currentTerm}
       />
       {courses.length === 0 && <Empty>{t.marks.noCourses}</Empty>}
-      <div className="grid items-start gap-4 lg:grid-cols-2">
+      <div className="grid items-start gap-3 md:grid-cols-2 md:gap-4">
         {courses.map((c) => (
           <details key={c.groupId} className="group rounded-2xl border border-line bg-surface" open={courses.length === 1}>
             <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4">
@@ -67,7 +67,7 @@ async function Marks({ searchParams }: Pick<PageProps<"/[lang]/marks">, "searchP
             </summary>
             <div className="border-t border-line">
               {c.finalGrade != null ? (
-                <div className="flex items-center justify-between bg-accent-soft px-4 py-3 text-accent">
+                <div className="flex items-center justify-between border-b border-line bg-accent-soft px-4 py-3 text-accent">
                   <span className="text-sm font-semibold">{t.marks.finalGrade}</span>
                   <span className="font-mono text-xl font-bold">{formatScore(c.finalGrade)}</span>
                 </div>

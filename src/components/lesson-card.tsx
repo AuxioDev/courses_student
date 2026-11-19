@@ -4,7 +4,7 @@ import { formatTime } from "@/lib/dates";
 import { fmt, getI18n } from "@/i18n";
 import { localePath } from "@/i18n/config";
 import { attendanceTone, lessonStatusTone } from "./status";
-import { Badge } from "./ui";
+import { Badge } from "./diary-ui";
 import { VideoIcon } from "./icons";
 
 const JOIN_WINDOW_MS = 15 * 60 * 1000;
@@ -16,7 +16,7 @@ function Materials({ text }: { text: string }) {
     <p className="mt-2 whitespace-pre-wrap break-words text-sm text-muted">
       {text.split(/(https?:\/\/[^\s<>"']*[^\s<>"'.,;:!?)])/g).map((part, i) =>
         i % 2 === 1 ? (
-          <a key={i} href={part} target="_blank" rel="noreferrer" className="break-all text-accent">
+          <a key={i} href={part} target="_blank" rel="noreferrer" className="break-all text-accent hover:underline">
             {part}
           </a>
         ) : (
@@ -40,13 +40,13 @@ export async function LessonCard({ lesson, timeZone, now }: { lesson: LessonWith
 
   return (
     <div className={`flex gap-3 rounded-2xl border border-line bg-surface p-4 ${cancelled ? "opacity-60" : ""}`}>
-      <div className="w-12 shrink-0 text-right font-mono text-sm leading-tight">
+      <div className="w-12 shrink-0 text-right text-sm leading-tight tabular-nums">
         <div className={cancelled ? "line-through" : "font-semibold"}>{formatTime(lesson.startsAt, timeZone)}</div>
         <div className="text-muted">{formatTime(lesson.endsAt, timeZone)}</div>
       </div>
       <div className={`min-w-0 flex-1 border-l-2 pl-3 ${cancelled ? "border-line" : "border-accent"}`}>
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="font-semibold">{lesson.group.course.title}</span>
+          <span className="font-semibold leading-snug">{lesson.group.course.title}</span>
           {statusTone && (lesson.status === "moved" || lesson.status === "cancelled") && (
             <Badge tone={statusTone}>{t.lesson.status[lesson.status]}</Badge>
           )}
@@ -61,7 +61,7 @@ export async function LessonCard({ lesson, timeZone, now }: { lesson: LessonWith
           <ul className="mt-2 space-y-1">
             {lesson.homework.map((hw) => (
               <li key={hw.id}>
-                <Link href={localePath(locale, `/homework/${hw.id}`)} className="text-sm font-medium text-accent">
+                <Link href={localePath(locale, `/homework/${hw.id}`)} className="text-sm font-medium text-accent hover:underline">
                   {fmt(t.lesson.homework, { title: hw.title })}
                 </Link>
               </li>

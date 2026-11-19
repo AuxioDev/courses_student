@@ -5,7 +5,7 @@ import { getNotifications } from "@/lib/data";
 import { formatDateTime } from "@/lib/dates";
 import { getI18n } from "@/i18n";
 import { notificationHref, renderNotification } from "@/lib/notifications/types";
-import { Empty, PageTitle } from "@/components/ui";
+import { Empty, PageTitle } from "@/components/diary-ui";
 import { markAllNotificationsRead } from "@/app/actions";
 import { SubmitButton } from "@/components/submit-button";
 
@@ -46,7 +46,7 @@ async function Notifications() {
             const rendered = renderNotification(n.type, n.payload, t, locale, student.timezone);
             const href = notificationHref(locale, rendered);
             const body = (
-              <div className="flex gap-3 px-4 py-3">
+              <div className={`flex gap-3 px-4 py-3.5 ${n.readAt ? "" : "bg-accent-soft/50"}`}>
                 <span
                   className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${n.readAt ? "bg-transparent" : "bg-accent"}`}
                   aria-label={n.readAt ? undefined : t.notifications.unread}
@@ -61,7 +61,13 @@ async function Notifications() {
             );
             return (
               <li key={n.id} className="border-b border-line last:border-b-0">
-                {href ? <Link href={href}>{body}</Link> : body}
+                {href ? (
+                  <Link href={href} className="block transition-colors hover:bg-surface-2">
+                    {body}
+                  </Link>
+                ) : (
+                  body
+                )}
               </li>
             );
           })}

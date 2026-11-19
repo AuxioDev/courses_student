@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Onest, Caveat } from "next/font/google";
+import { Inter } from "next/font/google";
 import { lang } from "next/root-params";
 import { locales } from "@/i18n/config";
 import { getI18n } from "@/i18n";
@@ -8,19 +8,10 @@ import "../role-theme.css";
 import "../motion.css";
 import { ServiceWorkerRegister } from "@/components/pwa/sw-register";
 
-const bodyFont = Onest({
-  // The shared stylesheet names its sans and mono variables after Geist, so these keep those names.
+const bodyFont = Inter({
+  // The shared stylesheet names its sans and mono variables after Geist, so this keeps that name.
   variable: "--font-geist-sans",
   subsets: ["latin", "latin-ext", "cyrillic"],
-  display: "swap",
-});
-
-// Marks and scores are written in pen, like a teacher in a paper diary. Only digits use it, and digits are plain
-// ASCII, so the one Latin subset is enough and it is preloaded: the marks are the first thing a student looks for,
-// and with the font loaded late they first showed in a fallback cursive and then jumped.
-const penFont = Caveat({
-  variable: "--font-pen",
-  subsets: ["latin"],
   display: "swap",
 });
 
@@ -44,14 +35,14 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#fbfcff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0f1830" },
+    { media: "(prefers-color-scheme: light)", color: "#f6f7fb" },
+    { media: "(prefers-color-scheme: dark)", color: "#0d1220" },
   ],
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/[lang]">) {
   return (
-    <html lang={await lang()} className={`${bodyFont.variable} ${penFont.variable} h-full antialiased`}>
+    <html lang={await lang()} className={`${bodyFont.variable} h-full antialiased`}>
       <body className="min-h-full font-sans">
         {children}
         <ServiceWorkerRegister />

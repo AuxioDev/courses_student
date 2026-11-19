@@ -47,7 +47,7 @@ describe.each(["light", "dark"] as const)("palette contrast (%s)", (mode) => {
   const c = modes[mode];
 
   it("defines every token as a hex colour", () => {
-    for (const name of ["bg", "surface", "surface-2", "ink", "muted", "line", "accent", "accent-ink", "accent-soft", "good", "good-soft", "warn", "warn-soft", "bad", "bad-soft"]) {
+    for (const name of ["bg", "surface", "surface-2", "ink", "muted", "line", "accent", "accent-ink", "accent-soft", "good", "good-soft", "warn", "warn-soft", "bad", "bad-soft", "info", "info-soft", "secondary"]) {
       expect(c[name], `--${name}`).toMatch(/^#[0-9a-f]{6}$/);
     }
   });
@@ -59,6 +59,7 @@ describe.each(["light", "dark"] as const)("palette contrast (%s)", (mode) => {
     ["accent-ink", "accent"],
     ["good", "good-soft"], ["warn", "warn-soft"], ["bad", "bad-soft"],
     ["good", "bg"], ["warn", "bg"], ["bad", "bg"],
+    ["info", "info-soft"], ["info", "bg"], ["info", "surface"], ["secondary", "bg"], ["secondary", "surface"],
   ])("text --%s on --%s is at least 4.5:1", (fg, bg) => {
     expect(contrast(c[fg], c[bg])).toBeGreaterThanOrEqual(4.5);
   });

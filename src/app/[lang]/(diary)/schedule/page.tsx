@@ -18,7 +18,7 @@ import {
 import { getI18n } from "@/i18n";
 import { localePath, type Locale } from "@/i18n/config";
 import { LessonCard } from "@/components/lesson-card";
-import { Empty } from "@/components/ui";
+import { Empty, PageTitle, Segmented } from "@/components/diary-ui";
 import { ChevronLeft, ChevronRight } from "@/components/icons";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -70,35 +70,30 @@ async function Schedule({ searchParams }: Pick<PageProps<"/[lang]/schedule">, "s
 
   return (
     <>
-      <div className="mb-4 flex rounded-xl border border-line bg-surface p-1 text-sm font-medium">
-        {(["week", "month"] as const).map((v) => (
-          <Link
-            key={v}
-            href={href(v, anchor)}
-            className={`flex-1 rounded-lg py-1.5 text-center ${view === v ? "bg-accent text-accent-ink" : "text-muted"}`}
-          >
-            {t.schedule[v]}
-          </Link>
-        ))}
-      </div>
-
-      <div className="mb-4 flex items-center justify-between">
-        <Link href={href(view, prev)} className="btn-ghost px-2" aria-label={t.common.previous}>
-          <ChevronLeft />
-        </Link>
-        <h1 className="text-lg font-semibold first-letter:uppercase">{title}</h1>
-        <Link href={href(view, next)} className="btn-ghost px-2" aria-label={t.common.next}>
-          <ChevronRight />
-        </Link>
-      </div>
+      <PageTitle title={t.schedule.title}>
+        <div className="space-y-4">
+          <Segmented
+            items={(["week", "month"] as const).map((v) => ({ key: v, href: href(v, anchor), label: t.schedule[v], active: view === v }))}
+          />
+          <div className="flex items-center justify-between">
+            <Link href={href(view, prev)} className="btn-ghost min-w-11 !px-0" aria-label={t.common.previous}>
+              <ChevronLeft />
+            </Link>
+            <h2 className="text-base font-semibold first-letter:uppercase">{title}</h2>
+            <Link href={href(view, next)} className="btn-ghost min-w-11 !px-0" aria-label={t.common.next}>
+              <ChevronRight />
+            </Link>
+          </div>
+        </div>
+      </PageTitle>
 
       {view === "week" ? (
-        <div className="grid gap-5 lg:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2">
           {Array.from({ length: 7 }, (_, i) => addDays(first, i)).map((key) => {
             const dayLessons = byDay.get(key) ?? [];
             return (
               <section key={key}>
-                <h2 className={`mb-2 text-sm font-semibold first-letter:uppercase ${key === today ? "text-accent" : "text-muted"}`}>
+                <h2 className={`mb-2 text-sm font-semibold first-letter:uppercase ${key === today ? "text-accent" : "text-ink"}`}>
                   {formatDayKey(key, locale, { month: "short" })}
                   {key === today && ` · ${t.schedule.today}`}
                 </h2>
@@ -145,7 +140,7 @@ function MonthGrid({
   for (let key = first; key < last; key = addDays(key, 1)) days.push(key);
   return (
     <div className="mb-4 overflow-hidden rounded-2xl border border-line bg-surface">
-      <div className="grid grid-cols-7 border-b border-line text-center text-[0.6875rem] font-semibold uppercase text-muted">
+      <div className="grid grid-cols-7 border-b border-line text-center text-xs font-semibold uppercase text-muted">
         {weekdayNames(locale).map((d) => (
           <div key={d} className="py-2">
             {d}
@@ -160,7 +155,7 @@ function MonthGrid({
             <Link
               key={key}
               href={localePath(locale, `/diary?date=${key}`)}
-              className={`min-h-16 border-b border-r border-line p-1 text-xs ${inMonth ? "" : "bg-surface-2/60 text-muted"}`}
+              className={`min-h-[4.5rem] border-b border-r border-line p-1 text-xs transition-colors hover:bg-surface-2/70 ${inMonth ? "" : "bg-surface-2/60 text-muted"}`}
             >
               <span
                 className={`inline-flex h-5 w-5 items-center justify-center rounded-full ${
@@ -173,7 +168,7 @@ function MonthGrid({
                 {dayLessons.slice(0, 3).map((lesson) => (
                   <div
                     key={lesson.id}
-                    className={`truncate rounded px-0.5 font-mono text-[0.6875rem] leading-4 sm:px-1 sm:font-sans ${
+                    className={`truncate rounded-sm px-0.5 text-xs leading-4 font-medium tabular-nums sm:px-1 ${
                       lesson.status === "cancelled"
                         ? "bg-bad-soft text-bad line-through"
                         : lesson.status === "moved"
@@ -186,7 +181,7 @@ function MonthGrid({
                     <span className="hidden sm:inline"> {lesson.group.course.title}</span>
                   </div>
                 ))}
-                {dayLessons.length > 3 && <div className="text-[0.6875rem] text-muted">+{dayLessons.length - 3}</div>}
+                {dayLessons.length > 3 && <div className="text-xs text-muted">+{dayLessons.length - 3}</div>}
               </div>
             </Link>
           );

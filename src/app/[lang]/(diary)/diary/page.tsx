@@ -6,7 +6,7 @@ import { addDays, dayKey, formatDayKey, formatTime, isDayKey } from "@/lib/dates
 import { getI18n } from "@/i18n";
 import { localePath } from "@/i18n/config";
 import { LessonCard } from "@/components/lesson-card";
-import { Badge, Card, Empty, Section } from "@/components/ui";
+import { Badge, Card, Empty, PageTitle, Section } from "@/components/diary-ui";
 import { ChevronLeft, ChevronRight, TrashIcon } from "@/components/icons";
 import { formatScore, homeworkStateTone } from "@/components/status";
 import { deleteNote } from "@/app/actions";
@@ -38,24 +38,26 @@ async function DiaryDay({ searchParams }: Pick<PageProps<"/[lang]/diary">, "sear
 
   return (
     <>
-      <div className="mb-4 flex items-center justify-between gap-2">
-        <Link href={dayHref(addDays(key, -1))} className="btn-ghost px-2" aria-label={t.diary.previousDay}>
-          <ChevronLeft />
-        </Link>
-        <div className="text-center">
-          <h1 className="text-lg font-semibold first-letter:uppercase">{formatDayKey(key, locale)}</h1>
-          {key !== today && (
-            <Link href={localePath(locale, "/diary")} className="text-xs text-accent">
-              {t.diary.backToToday}
-            </Link>
-          )}
+      <PageTitle title={t.diary.title}>
+        <div className="flex items-center justify-between gap-2">
+          <Link href={dayHref(addDays(key, -1))} className="btn-ghost min-w-11 !px-0" aria-label={t.diary.previousDay}>
+            <ChevronLeft />
+          </Link>
+          <div className="text-center">
+            <h2 className="text-base font-semibold first-letter:uppercase">{formatDayKey(key, locale)}</h2>
+            {key !== today && (
+              <Link href={localePath(locale, "/diary")} className="inline-flex min-h-6 items-center text-xs font-medium text-accent hover:underline">
+                {t.diary.backToToday}
+              </Link>
+            )}
+          </div>
+          <Link href={dayHref(addDays(key, 1))} className="btn-ghost min-w-11 !px-0" aria-label={t.diary.nextDay}>
+            <ChevronRight />
+          </Link>
         </div>
-        <Link href={dayHref(addDays(key, 1))} className="btn-ghost px-2" aria-label={t.diary.nextDay}>
-          <ChevronRight />
-        </Link>
-      </div>
+      </PageTitle>
 
-      <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-8">
+      <div className="md:grid md:grid-cols-2 md:items-start md:gap-8">
         <div>
           <Section title={t.diary.lessons}>
             {lessons.length === 0 ? (

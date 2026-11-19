@@ -5,7 +5,7 @@ import { getNotes, getTodos } from "@/lib/data";
 import { dayKey, formatDayKey } from "@/lib/dates";
 import { getI18n } from "@/i18n";
 import { localePath } from "@/i18n/config";
-import { Card, Empty, PageTitle, Section } from "@/components/ui";
+import { Card, Empty, PageTitle, Section } from "@/components/diary-ui";
 import { CheckIcon, TrashIcon } from "@/components/icons";
 import { deleteNote, deleteTodo, toggleTodo } from "@/app/actions";
 import { SubmitButton } from "@/components/submit-button";
@@ -34,7 +34,7 @@ async function Notes() {
     <>
       <PageTitle title={t.notes.title} subtitle={t.notes.subtitle} />
 
-      <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-8">
+      <div className="md:grid md:grid-cols-2 md:items-start md:gap-8">
         <Section title={t.notes.todos}>
           <AddTodoForm
             placeholder={t.notes.addTodo}
@@ -57,7 +57,7 @@ async function Notes() {
                     >
                       <span
                         className={`flex h-6 w-6 items-center justify-center rounded-md border ${
-                          todo.done ? "border-good bg-good text-bg" : "border-line"
+                          todo.done ? "border-good bg-good text-bg" : "border-muted"
                         }`}
                       >
                         {todo.done && <CheckIcon width={16} height={16} strokeWidth={3} />}
@@ -105,7 +105,7 @@ async function Notes() {
                       <div className="min-w-0">
                         <Link
                           href={localePath(locale, `/diary?date=${key}`)}
-                          className="text-xs font-medium text-accent"
+                          className="text-xs font-medium text-accent hover:underline"
                         >
                           {formatDayKey(key, locale, { month: "short" })}
                           {note.lesson?.group.course.title && ` · ${note.lesson.group.course.title}`}

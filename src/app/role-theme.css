@@ -1,148 +1,328 @@
-/* Student Diary: a squared school notebook. Faint blue squares, a red margin line, navy
-   ballpoint ink, and marks written in pen (Caveat) like a teacher would. The accent stays the
-   diary's green. Loaded after globals.css, which is identical in all three apps (the Teacher
-   and Admin apps compare it byte for byte), so everything that differs lives here.
+/* Student Diary design layer: "Calm Academic". A cool neutral canvas, white surfaces, one ink-blue primary,
+   status colours only where they mean something. Loaded after globals.css, which is identical in all three apps
+   (the Teacher and Admin apps compare it byte for byte), so everything that differs lives here, including
+   restyling the shared classes (.field, .btn, .btn-ghost, .icon-btn) and shared components by selector.
+   This file is unlayered, so it wins over Tailwind utilities of equal specificity.
    Contrast is checked by src/lib/__tests__/contrast.test.ts. */
 :root {
-  --bg: #fbfcff;
+  --bg: #f6f7fb;
   --surface: #ffffff;
-  --surface-2: #edf1fb;
-  --ink: #1b2750;
-  --muted: #515d86;
-  --line: #cfd9ee;
-  --accent: #16794c;
+  --surface-2: #eef1f7;
+  --ink: #141a2e;
+  --muted: #596278;
+  --line: #dde2ec;
+  --accent: #3451d1;
   --accent-ink: #ffffff;
-  --accent-soft: #e2f3ea;
-  --paper-grid: #e1e8f7;
-  --margin-line: #e98a8c;
-  --pen: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 6' preserveAspectRatio='none'%3E%3Cpath d='M0 3Q6 0 12 3T24 3T36 3T48 3T60 3T72 3T84 3T100 3' fill='none' stroke='%2316794c' stroke-width='1.6' stroke-linecap='round' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E");
+  --accent-soft: #eaeefd;
+  --secondary: #0e7c74;
+  --info: #1f6fb2;
+  --info-soft: #e6f1fa;
+  --good: #18794e;
+  --good-soft: #e6f4ec;
+  --warn: #9a5b00;
+  --warn-soft: #fdf2df;
+  --bad: #c0262d;
+  --bad-soft: #fdecec;
+  --accent-hover: #2b44b8;
+  --bad-hover: #a31f25;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --shadow-1: 0 1px 2px rgb(16 24 40 / 0.06);
+  --shadow-2: 0 8px 24px rgb(16 24 40 / 0.1);
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%23596278' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 8l5 5 5-5'/%3E%3C/svg%3E");
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0f1830;
-    --surface: #17223f;
-    --surface-2: #1f2d52;
-    --ink: #e8edfb;
-    --muted: #a4b1d6;
-    --line: #2c3b66;
-    --accent: #52c78f;
-    --accent-ink: #0d2a1e;
-    --accent-soft: #1f4234;
-    --paper-grid: #16244a;
-    --margin-line: #8a4560;
-    --pen: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 6' preserveAspectRatio='none'%3E%3Cpath d='M0 3Q6 0 12 3T24 3T36 3T48 3T60 3T72 3T84 3T100 3' fill='none' stroke='%2352c78f' stroke-width='1.6' stroke-linecap='round' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E");
+    --bg: #0d1220;
+    --surface: #151b2c;
+    --surface-2: #1d2538;
+    --ink: #e8ecf5;
+    --muted: #9aa4bb;
+    --line: #283149;
+    --accent: #8ea2ff;
+    --accent-ink: #0d1220;
+    --accent-soft: #1f2a52;
+    --secondary: #4fd1c5;
+    --info: #6cb5f0;
+    --info-soft: #142d44;
+    --good: #4cc68a;
+    --good-soft: #15352a;
+    --warn: #f2b45a;
+    --warn-soft: #3a2c14;
+    --bad: #ff8f8a;
+    --bad-soft: #43201f;
+    --accent-hover: #a5b4ff;
+    --bad-hover: #ffa7a2;
+    --shadow-1: none;
+    --shadow-2: 0 8px 24px rgb(0 0 0 / 0.45);
+    --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%239aa4bb' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 8l5 5 5-5'/%3E%3C/svg%3E");
   }
 }
 
-/* The page is the paper. */
 body {
-  background-color: var(--bg);
-  background-image:
-    linear-gradient(var(--paper-grid) 1px, transparent 1px),
-    linear-gradient(90deg, var(--paper-grid) 1px, transparent 1px);
-  background-size: 24px 24px;
+  font-size: 0.9375rem;
+  line-height: 1.45;
 }
 
-/* The margin line runs down the page once, when it loads. On wide screens it sits just
-   right of the side navigation, where the page begins. */
-body::before {
-  content: "";
-  position: fixed;
-  z-index: -1;
-  top: 0;
-  bottom: 0;
-  left: 12px;
-  width: 2px;
-  background: var(--margin-line);
-  opacity: 0.7;
-  pointer-events: none;
-  transform-origin: top;
-  animation: margin-draw var(--dur-ambient) var(--ease-out) both;
+/* One radius scale: 6 chips, 8 controls, 12 cards and dialogs. Utilities already in the pages map onto it. */
+.rounded-2xl {
+  border-radius: var(--radius-lg);
 }
-@media (min-width: 1024px) {
-  body::before {
-    left: calc(15rem + 14px);
-  }
+.rounded-xl,
+.rounded-lg {
+  border-radius: var(--radius-md);
+}
+.rounded-md {
+  border-radius: var(--radius-sm);
 }
 
-/* Page titles are underlined in pen, written left to right. */
+/* Cards (and lists that are cards) rest on a hairline and a whisper of shadow. */
+.rounded-2xl.border-line.bg-surface {
+  box-shadow: var(--shadow-1);
+}
+/* A link that works as a card answers the pointer. */
+a:hover > .rounded-2xl.border-line.bg-surface,
+a.rounded-2xl.border-line.bg-surface:hover {
+  border-color: color-mix(in srgb, var(--ink) 18%, var(--line));
+  box-shadow: var(--shadow-2);
+}
+.rounded-2xl.border-line.bg-surface {
+  transition:
+    border-color var(--dur-fast) ease,
+    box-shadow var(--dur-base) var(--ease-out);
+}
+
 main h1 {
-  width: fit-content;
-  padding-bottom: 0.4rem;
-  font-weight: 700;
+  font-weight: 650;
   letter-spacing: -0.02em;
-  background: var(--pen) left bottom / 100% 6px no-repeat;
-  animation: pen-write var(--dur-slow) 0.2s var(--ease-out) both;
 }
 main h2 {
   font-weight: 650;
 }
 
-/* Times and counts use the text face with even-width digits. Large numbers (marks, scores,
-   averages) are the teacher's handwriting. */
+/* Times, counts and marks: the body face with even-width digits. */
 body .font-mono {
   font-family: var(--font-geist-sans), system-ui, sans-serif;
   font-variant-numeric: tabular-nums;
 }
 body .font-mono:is(.text-lg, .text-xl, .text-2xl, .text-3xl) {
-  display: inline-block;
-  font-family: var(--font-pen), cursive;
-  font-weight: 700;
-  line-height: 1;
-  transform: rotate(-3deg) scale(1.25);
-  /* Written in from left to right. Marks are content, so this finishes within 0.6 s. */
-  animation: ink-write var(--dur-base) var(--ease-out) 0.1s both;
+  font-weight: 650;
+  letter-spacing: -0.01em;
 }
 
-/* Caveat's digits are small for their size, and the smallest mark (the list on Today) was the hardest to read. */
-body .font-mono.text-lg {
-  transform: rotate(-3deg) scale(1.55);
-  transform-origin: right center;
+/* Buttons. .btn is primary, .btn-ghost is secondary, .btn-danger is for destructive actions. */
+.btn,
+.btn-ghost,
+.btn-danger {
+  min-height: 2.5rem;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  line-height: 1.25rem;
+  transition:
+    background-color var(--dur-fast) ease,
+    border-color var(--dur-fast) ease,
+    color var(--dur-fast) ease,
+    box-shadow var(--dur-fast) ease;
 }
-
-@keyframes margin-draw {
-  from {
-    transform: scaleY(0);
+.btn:active,
+.btn-ghost:active,
+.btn-danger:active {
+  transform: none;
+}
+@media (max-width: 639px) {
+  .btn,
+  .btn-ghost,
+  .btn-danger {
+    min-height: 2.75rem;
   }
+}
+.btn {
+  box-shadow: var(--shadow-1);
+}
+.btn:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+.btn-ghost {
+  border-color: var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-1);
+}
+.btn-ghost:hover:not(:disabled) {
+  background: var(--surface-2);
+  border-color: color-mix(in srgb, var(--ink) 18%, var(--line));
+}
+/* A ghost button can carry a status colour (Log out): the utility must beat the ghost colour above. */
+.btn-ghost.text-bad {
+  color: var(--bad);
+}
+.btn-ghost.text-bad:hover:not(:disabled) {
+  background: var(--bad-soft);
+  border-color: color-mix(in srgb, var(--bad) 35%, var(--line));
+}
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid transparent;
+  background: var(--bad);
+  color: var(--bg);
+  font-size: 0.875rem;
+}
+.btn-danger:hover:not(:disabled) {
+  background: var(--bad-hover);
+}
+/* Disabled reads as disabled, not only as faded. */
+.btn:disabled,
+.btn-ghost:disabled,
+.btn-danger:disabled {
+  opacity: 1;
+  background: var(--surface-2);
+  border-color: var(--line);
+  color: var(--muted);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+.btn[aria-disabled="true"][data-pending] {
+  cursor: progress;
+}
+/* A submit in flight shows a small spinner after its label. */
+[data-pending]:is(.btn, .btn-ghost, .btn-danger)::after {
+  content: "";
+  width: 0.875rem;
+  height: 0.875rem;
+  margin-left: 0.5rem;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 9999px;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin {
   to {
-    transform: scaleY(1);
-  }
-}
-@keyframes pen-write {
-  from {
-    background-size: 0 6px;
-  }
-  to {
-    background-size: 100% 6px;
+    transform: rotate(360deg);
   }
 }
 
-/* In a list, each mark is written a moment after the one above it. The whole list is done within 0.6 s. */
-li:nth-child(2) .font-mono:is(.text-lg, .text-xl, .text-2xl, .text-3xl) { animation-delay: 0.13s; }
-li:nth-child(3) .font-mono:is(.text-lg, .text-xl, .text-2xl, .text-3xl) { animation-delay: 0.16s; }
-li:nth-child(4) .font-mono:is(.text-lg, .text-xl, .text-2xl, .text-3xl) { animation-delay: 0.19s; }
-li:nth-child(5) .font-mono:is(.text-lg, .text-xl, .text-2xl, .text-3xl) { animation-delay: 0.22s; }
-li:nth-child(6) .font-mono:is(.text-lg, .text-xl, .text-2xl, .text-3xl) { animation-delay: 0.25s; }
+.icon-btn {
+  border-radius: var(--radius-md);
+  transition: background-color var(--dur-fast) ease, color var(--dur-fast) ease;
+}
+.icon-btn:hover:not(:disabled) {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+/* Fields. */
+.field {
+  min-height: 2.5rem;
+  border-radius: var(--radius-md);
+  border-color: var(--line);
+  font-size: 0.9375rem;
+}
+@media (max-width: 639px) {
+  .field {
+    min-height: 2.75rem;
+  }
+}
+textarea.field {
+  min-height: 0;
+}
+.field:hover:not(:focus):not(:disabled) {
+  border-color: color-mix(in srgb, var(--ink) 22%, var(--line));
+}
+.field:focus {
+  border-color: var(--accent);
+}
+.field[aria-invalid="true"] {
+  border-color: var(--bad);
+}
+.field[aria-invalid="true"]:focus {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--bad) 18%, transparent);
+}
+.field:disabled {
+  background: var(--surface-2);
+  color: var(--muted);
+}
+select.field {
+  appearance: none;
+  padding-right: 2.25rem;
+  background-image: var(--chevron);
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1rem;
+}
+input[type="checkbox"] {
+  accent-color: var(--accent);
+}
+
+/* Expandable cards show that they expand. */
+details > summary {
+  position: relative;
+}
+details > summary::-webkit-details-marker {
+  display: none;
+}
+details > summary::after {
+  content: "";
+  flex: none;
+  width: 0.45rem;
+  height: 0.45rem;
+  margin-left: 0.25rem;
+  border: solid var(--muted);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) translateY(-0.1rem);
+  transition: transform var(--dur-base) var(--ease-out);
+}
+details[open] > summary::after {
+  transform: rotate(-135deg) translateY(-0.1rem);
+}
+details > summary:hover {
+  background: color-mix(in srgb, var(--surface-2) 55%, transparent);
+}
+
+/* Dialogs and menus (shared components, restyled here). */
+dialog.confirm-dialog {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
+}
+dialog.confirm-dialog::backdrop {
+  background: rgb(10 14 28 / 0.45);
+}
+.menu-pop {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
+}
+
+/* Rounded status messages follow the control radius. */
+[role="alert"].rounded-xl,
+[role="status"].rounded-xl {
+  border-radius: var(--radius-md);
+}
 
 /* The current tab gives a small pop when it becomes current. */
 nav a[aria-current="page"] svg {
   animation: icon-pop var(--dur-base) var(--ease-spring) both;
 }
-
-@keyframes ink-write {
-  from {
-    clip-path: inset(-20% 100% -20% 0);
-  }
-  to {
-    clip-path: inset(-20% -20% -20% 0);
-  }
-}
 @keyframes icon-pop {
   from {
-    transform: scale(0.7);
+    transform: scale(0.8);
   }
   to {
     transform: scale(1);
   }
+}
+
+/* The standalone account pages (reset password, forgot password, forced password change, not found) start with the
+   app mark. Done here, by selector, because some of those pages are shared files with the Teacher and Admin apps. */
+main.max-w-sm.min-h-dvh::before {
+  content: "";
+  flex: none;
+  width: 2.5rem;
+  height: 2.5rem;
+  margin-bottom: 1.5rem;
+  background: url("/icon.svg") center / contain no-repeat;
 }

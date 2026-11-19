@@ -5,7 +5,7 @@ import { getHomeworkList, type HomeworkItem } from "@/lib/data";
 import { formatDateTime, relativeDue } from "@/lib/dates";
 import { fmt, getI18n } from "@/i18n";
 import { localePath } from "@/i18n/config";
-import { Badge, Card, Empty, PageTitle } from "@/components/ui";
+import { Badge, Card, Empty, PageTitle, UnderlineTabs } from "@/components/diary-ui";
 import { formatScore, homeworkStateTone } from "@/components/status";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -41,36 +41,28 @@ async function HomeworkList({ searchParams }: Pick<PageProps<"/[lang]/homework">
   return (
     <>
       <PageTitle title={t.homework.title} />
-      <div className="scroll-hint -mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1 [--scroll-cover:var(--bg)]">
-        {tabs.map((tb) => {
-          const count = all.filter(tb.match).length;
-          const active = tb.id === tab.id;
-          return (
-            <Link
-              key={tb.id}
-              href={localePath(locale, `/homework?tab=${tb.id}`)}
-              className={`shrink-0 rounded-full border px-3 py-1.5 text-sm font-medium ${
-                active ? "border-accent bg-accent text-accent-ink" : "border-line bg-surface text-ink"
-              }`}
-            >
-              {t.homework.tabs[tb.id]}
-              {count > 0 && <span className={active ? "ml-1 opacity-80" : "ml-1 text-muted"}>{count}</span>}
-            </Link>
-          );
-        })}
-      </div>
+      <UnderlineTabs
+        label={t.homework.title}
+        items={tabs.map((tb) => ({
+          key: tb.id,
+          href: localePath(locale, `/homework?tab=${tb.id}`),
+          label: t.homework.tabs[tb.id],
+          count: all.filter(tb.match).length,
+          active: tb.id === tab.id,
+        }))}
+      />
 
       {items.length === 0 ? (
         <Empty>{t.common.nothingHere}</Empty>
       ) : (
-        <ul className="grid gap-2 sm:grid-cols-2">
+        <ul className="grid gap-3 sm:grid-cols-2">
           {items.map((hw) => (
             <li key={hw.id}>
               <Link href={localePath(locale, `/homework/${hw.id}`)} className="block">
                 <Card>
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="font-medium">{hw.title}</p>
+                      <p className="font-medium leading-snug">{hw.title}</p>
                       <p className="text-xs text-muted">{hw.group.course.title}</p>
                     </div>
                     {hw.state === "graded" && hw.submission?.score != null ? (

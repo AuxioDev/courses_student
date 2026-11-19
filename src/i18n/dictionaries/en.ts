@@ -345,6 +345,8 @@ export const en = {
     logoutEverywhere: "Log out on all devices",
     logoutEverywhereHint: "Use this if you logged in on someone else's phone or computer.",
     timezoneSearch: "Search timezones…",
+    preferences: "Preferences",
+    dangerZone: "Danger zone",
   },
   more: {
     title: "More",

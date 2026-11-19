@@ -344,6 +344,8 @@ export const ru: Dictionary = {
     logoutEverywhere: "Выйти на всех устройствах",
     logoutEverywhereHint: "Используйте, если входили с чужого телефона или компьютера.",
     timezoneSearch: "Найти часовой пояс…",
+    preferences: "Настройки",
+    dangerZone: "Опасная зона",
   },
   more: {
     title: "Ещё",

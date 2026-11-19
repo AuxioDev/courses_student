@@ -1,7 +1,7 @@
-import Link from "next/link";
 import type { StudentTerm } from "@/lib/data";
 import type { Locale } from "@/i18n/config";
 import { localePath } from "@/i18n/config";
+import { UnderlineTabs } from "./diary-ui";
 
 // Shown only when the student has courses in more than one term.
 export function TermSwitcher({
@@ -21,23 +21,19 @@ export function TermSwitcher({
 }) {
   if (terms.length < 2) return null;
   return (
-    <nav aria-label={label} className="scroll-hint -mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1 [--scroll-cover:var(--bg)]">
-      {terms.map((term) => {
-        const active = term.id === selected;
-        return (
-          <Link
-            key={term.id}
-            href={localePath(locale, term.current ? path : `${path}?term=${term.id}`)}
-            aria-current={active ? "page" : undefined}
-            className={`inline-flex min-h-11 shrink-0 items-center rounded-full border px-3 text-sm font-medium sm:min-h-8 ${
-              active ? "border-accent bg-accent text-accent-ink" : "border-line bg-surface text-ink"
-            }`}
-          >
+    <UnderlineTabs
+      label={label}
+      items={terms.map((term) => ({
+        key: term.id,
+        href: localePath(locale, term.current ? path : `${path}?term=${term.id}`),
+        label: (
+          <>
             {term.name}
-            {term.current && <span className={active ? "ml-1 opacity-80" : "ml-1 text-muted"}>· {currentLabel}</span>}
-          </Link>
-        );
-      })}
-    </nav>
+            {term.current && <span className="font-normal text-muted">· {currentLabel}</span>}
+          </>
+        ),
+        active: term.id === selected,
+      }))}
+    />
   );
 }

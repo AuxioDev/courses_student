@@ -4,7 +4,7 @@ import { getAttendanceByCourse, resolveTerm } from "@/lib/data";
 import { formatDateTime } from "@/lib/dates";
 import { needsAttention } from "@/lib/grading";
 import { fmt, getI18n } from "@/i18n";
-import { Badge, Empty, PageTitle } from "@/components/ui";
+import { Badge, Empty, PageTitle } from "@/components/diary-ui";
 import { attendanceTone } from "@/components/status";
 import { TermSwitcher } from "@/components/term-switcher";
 import { AttendanceAlert } from "@/components/attendance-alert";
@@ -15,6 +15,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 const levelText = { ok: "text-good", warn: "text-warn", risk: "text-bad" } as const;
+const levelBar = { ok: "bg-good", warn: "bg-warn", risk: "bg-bad" } as const;
 
 // Data is ready in tens of milliseconds; waiting for it beats flashing a skeleton
 // (React holds streamed sections back ~300 ms, which delayed the real content).
@@ -57,15 +58,20 @@ async function Attendance({ searchParams }: Pick<PageProps<"/[lang]/attendance">
         </div>
       )}
       {courses.length === 0 && <Empty>{t.marks.noCourses}</Empty>}
-      <div className="grid items-start gap-4 lg:grid-cols-2">
+      <div className="grid items-start gap-3 md:grid-cols-2 md:gap-4">
         {courses.map((c) => (
           <details key={c.groupId} className="rounded-2xl border border-line bg-surface">
             <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-4">
-              <div>
+              <div className="min-w-0 flex-1">
                 <p className="font-semibold">{c.course}</p>
                 <p className="text-xs text-muted">
                   {c.groupName} · {fmt(t.attendance.recorded, { n: c.records.length })}
                 </p>
+                {c.rate != null && (
+                  <div aria-hidden="true" className="mt-2.5 h-1.5 max-w-40 overflow-hidden rounded-full bg-surface-2">
+                    <div className={`h-full rounded-full ${levelBar[c.level]}`} style={{ width: `${Math.round(c.rate * 100)}%` }} />
+                  </div>
+                )}
               </div>
               <span className={`font-mono text-2xl font-semibold ${c.rate == null ? "" : levelText[c.level]}`}>
                 {c.rate == null ? "—" : `${Math.round(c.rate * 100)}%`}

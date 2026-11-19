@@ -9,7 +9,7 @@ export async function NotificationBell() {
   return (
     <Link
       href={localePath(locale, "/notifications")}
-      className="relative flex h-11 w-11 items-center justify-center rounded-full text-ink"
+      className="relative flex h-11 w-11 items-center justify-center rounded-lg text-ink transition-colors hover:bg-surface-2"
       aria-label={unread ? fmt(t.header.unread, { n: unread }) : t.header.notifications}
     >
       <BellIcon />

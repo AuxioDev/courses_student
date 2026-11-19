@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { getCurrentStudent } from "@/lib/auth";
 import { getI18n } from "@/i18n";
 import { localePath } from "@/i18n/config";
-import { Card, PageTitle } from "@/components/ui";
+import { Card, PageTitle, Section } from "@/components/diary-ui";
 import { cancelDeletion, logout, logoutEverywhere, requestDeletion } from "@/app/actions";
 import Link from "next/link";
 import { fmt } from "@/i18n/format";
@@ -41,79 +41,99 @@ async function Profile() {
   return (
     <>
       <PageTitle title={t.profile.title} />
-      <div className="gap-4 lg:columns-2 [&>*]:break-inside-avoid">
-        <Card className="mb-4">
-          <p className="text-lg font-semibold">{student.name}</p>
-          <p className="text-sm text-muted">{student.email}</p>
-        </Card>
-        <Card className="mb-4">
-          <TimezoneForm
-            current={student.timezone}
-            timezones={timezones}
-            labels={{ timezone: t.profile.timezone, search: t.profile.timezoneSearch, save: t.common.save, saving: t.common.saving }}
-            errors={t.errors}
-            ok={t.ok}
-          />
-        </Card>
-        <Card className="mb-4">
-          <NotificationSettings
-            current={notificationPrefs}
-            typeLabels={t.notifications.type}
-            labels={t.pwa}
-            saveLabels={{ save: t.common.save, saving: t.common.saving }}
-            ok={t.ok}
-          />
-        </Card>
-        <InstallPrompt mode="card" labels={t.pwa} />
-        <Card className="mb-4">
-          <h2 className="mb-3 text-sm font-semibold">{t.password.changeTitle}</h2>
-          <PasswordForm mode="change" username={student.email} labels={t.password} errors={t.errors} ok={t.ok} />
-        </Card>
-        <Card className="mb-4">
-          <h2 className="text-sm font-semibold">{t.profile.security}</h2>
-          <p className="mb-3 mt-0.5 text-xs text-muted">{t.profile.logoutEverywhereHint}</p>
-          <form action={logoutEverywhere}>
-            <SubmitButton className="btn-ghost">{t.profile.logoutEverywhere}</SubmitButton>
-          </form>
-        </Card>
-        <Card className="mb-4">
-          <h2 className="text-sm font-semibold">{t.privacy.sectionTitle}</h2>
-          <p className="mb-3 mt-0.5 text-xs text-muted">{t.privacy.downloadHint}</p>
-          <a href="/api/privacy/export" download className="btn-ghost">
-            {t.privacy.download}
-          </a>
-          <div className="mt-4 border-t border-line pt-3">
-            {student.deletionRequestedAt ? (
-              <form action={cancelDeletion}>
-                <p className="mb-2 text-sm text-warn">
-                  {fmt(t.privacy.deletionPending, {
-                    date: formatDateTime(student.deletionRequestedAt, student.timezone, locale),
-                  })}
-                </p>
-                <SubmitButton className="btn-ghost">{t.privacy.cancelDeletion}</SubmitButton>
-              </form>
-            ) : (
-              <ConfirmForm action={requestDeletion} message={t.privacy.requestDeletionConfirm} labels={t.dialog}>
-                <p className="mb-2 text-xs text-muted">{t.privacy.deletionHint}</p>
-                <SubmitButton className="btn-ghost text-bad">{t.privacy.requestDeletion}</SubmitButton>
-              </ConfirmForm>
-            )}
-          </div>
-          <Link href={localePath(locale, "/privacy")} className="mt-3 inline-flex min-h-11 items-center text-sm text-accent sm:min-h-6">
-            {t.privacy.link}
-          </Link>
-        </Card>
-        {feedbackUrl && (
-          <Card className="mb-4">
-            <h2 className="mb-1 text-sm font-semibold">{t.profile.feedbackTitle}</h2>
-            <a href={feedbackUrl} target="_blank" rel="noreferrer" className="text-sm text-accent">
-              {t.profile.feedbackLink}
-            </a>
+      <div className="md:grid md:grid-cols-2 md:items-start md:gap-8">
+        <div>
+          <Card className="mb-7">
+            <p className="text-lg font-semibold">{student.name}</p>
+            <p className="text-sm text-muted">{student.email}</p>
           </Card>
-        )}
-        <form action={logout}>
-          <SubmitButton className="btn-ghost w-full text-bad">{t.profile.logout}</SubmitButton>
-        </form>
+
+          <Section title={t.profile.preferences}>
+            <div className="space-y-3">
+              <Card>
+                <TimezoneForm
+                  current={student.timezone}
+                  timezones={timezones}
+                  labels={{ timezone: t.profile.timezone, search: t.profile.timezoneSearch, save: t.common.save, saving: t.common.saving }}
+                  errors={t.errors}
+                  ok={t.ok}
+                />
+              </Card>
+              <Card>
+                <NotificationSettings
+                  current={notificationPrefs}
+                  typeLabels={t.notifications.type}
+                  labels={t.pwa}
+                  saveLabels={{ save: t.common.save, saving: t.common.saving }}
+                  ok={t.ok}
+                />
+              </Card>
+              <InstallPrompt mode="card" labels={t.pwa} />
+            </div>
+          </Section>
+        </div>
+
+        <div>
+          <Section title={t.profile.security}>
+            <div className="space-y-3">
+              <Card>
+                <h3 className="mb-3 text-sm font-semibold">{t.password.changeTitle}</h3>
+                <PasswordForm mode="change" username={student.email} labels={t.password} errors={t.errors} ok={t.ok} />
+              </Card>
+              <Card>
+                <p className="mb-3 text-sm text-muted">{t.profile.logoutEverywhereHint}</p>
+                <form action={logoutEverywhere}>
+                  <SubmitButton className="btn-ghost">{t.profile.logoutEverywhere}</SubmitButton>
+                </form>
+              </Card>
+            </div>
+          </Section>
+
+          <Section title={t.privacy.sectionTitle}>
+            <div className="space-y-3">
+              <Card>
+                <p className="mb-3 text-sm text-muted">{t.privacy.downloadHint}</p>
+                <a href="/api/privacy/export" download className="btn-ghost">
+                  {t.privacy.download}
+                </a>
+                <Link href={localePath(locale, "/privacy")} className="mt-3 flex min-h-11 items-center text-sm font-medium text-accent hover:underline sm:min-h-6">
+                  {t.privacy.link}
+                </Link>
+              </Card>
+              {feedbackUrl && (
+                <Card>
+                  <h3 className="mb-1 text-sm font-semibold">{t.profile.feedbackTitle}</h3>
+                  <a href={feedbackUrl} target="_blank" rel="noreferrer" className="text-sm font-medium text-accent hover:underline">
+                    {t.profile.feedbackLink}
+                  </a>
+                </Card>
+              )}
+            </div>
+          </Section>
+
+          <Section title={t.profile.dangerZone}>
+            <Card className="border-bad/30">
+              {student.deletionRequestedAt ? (
+                <form action={cancelDeletion}>
+                  <p className="mb-2 text-sm text-warn">
+                    {fmt(t.privacy.deletionPending, {
+                      date: formatDateTime(student.deletionRequestedAt, student.timezone, locale),
+                    })}
+                  </p>
+                  <SubmitButton className="btn-ghost">{t.privacy.cancelDeletion}</SubmitButton>
+                </form>
+              ) : (
+                <ConfirmForm action={requestDeletion} message={t.privacy.requestDeletionConfirm} labels={t.dialog}>
+                  <p className="mb-3 text-sm text-muted">{t.privacy.deletionHint}</p>
+                  <SubmitButton className="btn-danger">{t.privacy.requestDeletion}</SubmitButton>
+                </ConfirmForm>
+              )}
+              <form action={logout} className="mt-4 border-t border-line pt-4">
+                <SubmitButton className="btn-ghost w-full text-bad">{t.profile.logout}</SubmitButton>
+              </form>
+            </Card>
+          </Section>
+        </div>
       </div>
     </>
   );

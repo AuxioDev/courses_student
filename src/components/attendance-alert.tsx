@@ -22,7 +22,7 @@ export function AttendanceAlert({
     limit: risk ? settings.attendanceRiskBelow : settings.attendanceWarnBelow,
   });
   return (
-    <p role={risk ? "alert" : undefined} className={`rounded-xl px-3 py-2 text-sm ${risk ? "bg-bad-soft text-bad" : "bg-warn-soft text-warn"}`}>
+    <p role={risk ? "alert" : undefined} className={`rounded-lg border px-3.5 py-2.5 text-sm font-medium ${risk ? "border-bad/25 bg-bad-soft text-bad" : "border-warn/25 bg-warn-soft text-warn"}`}>
       {text}
     </p>
   );

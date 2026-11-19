@@ -6,7 +6,7 @@ import { getHomework, receiptCode, type HomeworkAttempt } from "@/lib/data";
 import { formatDateTime, relativeDue } from "@/lib/dates";
 import { fmt, getI18n } from "@/i18n";
 import { localePath } from "@/i18n/config";
-import { Badge, Card, Section } from "@/components/ui";
+import { Badge, Card, Section } from "@/components/diary-ui";
 import { CheckIcon, ChevronLeft } from "@/components/icons";
 import type { Dictionary } from "@/i18n/dictionaries/en";
 import { formatScore, homeworkStateTone } from "@/components/status";
@@ -31,7 +31,7 @@ function LinkList({ urls }: { urls: string[] }) {
     <ul className="space-y-1">
       {urls.map((url) => (
         <li key={url}>
-          <a href={url} target="_blank" rel="noreferrer" className="break-all text-sm text-accent">
+          <a href={url} target="_blank" rel="noreferrer" className="break-all text-sm font-medium text-accent hover:underline">
             {url}
           </a>
         </li>
@@ -64,16 +64,16 @@ async function HomeworkDetail({ params }: Pick<PageProps<"/[lang]/homework/[id]"
 
   return (
     <>
-      <Link href={localePath(locale, "/homework")} className="mb-0 inline-flex min-h-11 items-center gap-1 text-sm text-muted sm:mb-3 sm:min-h-6">
+      <Link href={localePath(locale, "/homework")} className="mb-0 inline-flex min-h-11 items-center gap-1 text-sm font-medium text-muted transition-colors hover:text-ink sm:mb-3 sm:min-h-6">
         <ChevronLeft width={18} height={18} /> {t.homework.title}
       </Link>
 
-      <div className="mb-4">
-        <div className="mb-1 flex items-center gap-2">
+      <div className="mb-6">
+        <div className="mb-2 flex items-center gap-2">
           <Badge tone={homeworkStateTone[hw.state]}>{t.homework.state[hw.state]}</Badge>
           <span className="text-xs text-muted">{hw.group.course.title}</span>
         </div>
-        <h1 className="text-2xl font-semibold tracking-tight">{hw.title}</h1>
+        <h1 className="text-2xl leading-8 font-semibold tracking-tight md:text-[1.75rem] md:leading-9">{hw.title}</h1>
         <p className="mt-1 text-sm text-muted">
           {fmt(t.homework.due, { date: formatDateTime(hw.dueAt, tz, locale) })}
           {pendingDeadline && ` · ${relativeDue(hw.dueAt, new Date(), t.homework.dueRelative)}`} ·{" "}
@@ -118,7 +118,7 @@ async function HomeworkDetail({ params }: Pick<PageProps<"/[lang]/homework/[id]"
         <div>
           {latest && (
             <Section title={t.homework.yourSubmission}>
-              <div className="rounded-2xl border-2 border-good/40 bg-surface p-4">
+              <div className="rounded-2xl border border-good/40 bg-good-soft/30 p-4 md:p-5">
                 <div className="mb-3 flex items-start justify-between gap-3">
                   <div>
                     <p className="flex items-center gap-1.5 font-semibold text-good">

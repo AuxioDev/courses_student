@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, type ComponentType, type SVGProps } from "react";
+import { Suspense, type ComponentType, type ReactNode, type SVGProps } from "react";
 import Link from "next/link";
 import { LinkPending } from "./link-pending";
 import { usePathname } from "next/navigation";
@@ -63,7 +63,8 @@ function isActive(path: string, pathname: string | null, inBar: boolean) {
   return pathname.startsWith(path);
 }
 
-type Props = { locale: Locale; labels: NavLabels };
+// `footer` is shown at the foot of the desktop sidebar (the signed-in student), rendered by the layout.
+type Props = { locale: Locale; labels: NavLabels; footer?: ReactNode };
 type ViewProps = Props & { pathname: string | null };
 
 function Bar({ locale, labels, pathname }: ViewProps) {
@@ -72,7 +73,7 @@ function Bar({ locale, labels, pathname }: ViewProps) {
       aria-label={labels.main}
       className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
     >
-      <ul className="mx-auto grid max-w-2xl grid-cols-5">
+      <ul className="mx-auto grid max-w-2xl grid-cols-5 md:max-w-3xl">
         {barItems.map(({ path, key, Icon }) => {
           const active = isActive(path, pathname, true);
           return (
@@ -80,11 +81,17 @@ function Bar({ locale, labels, pathname }: ViewProps) {
               <Link
                 href={localePath(locale, path)}
                 aria-current={active ? "page" : undefined}
-                className={`flex flex-col items-center gap-0.5 py-2 text-[0.6875rem] font-medium ${
-                  active ? "text-accent" : "text-muted"
+                className={`flex min-h-16 flex-col items-center justify-center gap-1 py-1.5 text-xs font-medium transition-colors ${
+                  active ? "text-accent" : "text-muted hover:text-ink"
                 }`}
               >
-                <Icon strokeWidth={active ? 2.2 : 1.8} />
+                <span
+                  className={`flex h-7 w-14 items-center justify-center rounded-full transition-colors ${
+                    active ? "bg-accent-soft" : ""
+                  }`}
+                >
+                  <Icon strokeWidth={active ? 2.2 : 1.8} />
+                </span>
                 <span className="max-w-full truncate px-0.5">{labels[key]}</span>
                 <LinkPending />
               </Link>
@@ -96,14 +103,16 @@ function Bar({ locale, labels, pathname }: ViewProps) {
   );
 }
 
-function Side({ locale, labels, pathname }: ViewProps) {
+function Side({ locale, labels, pathname, footer }: ViewProps) {
   return (
-    <aside className="fixed inset-y-0 left-0 z-20 hidden w-60 flex-col border-r border-line bg-surface-2 lg:flex">
-      <Link href={localePath(locale, "/")} className="flex h-14 items-center gap-2 px-5 text-[0.9375rem] font-semibold tracking-tight">
-        <BookIcon className="text-accent" />
+    <aside className="fixed inset-y-0 left-0 z-20 hidden w-60 flex-col border-r border-line bg-surface lg:flex">
+      <Link href={localePath(locale, "/")} className="flex h-14 shrink-0 items-center gap-2.5 px-5 text-[0.9375rem] font-semibold tracking-tight">
+        <span className="grid h-8 w-8 place-items-center rounded-lg bg-accent text-accent-ink">
+          <BookIcon width={18} height={18} />
+        </span>
         {labels.appName}
       </Link>
-      <nav aria-label={labels.main} className="overflow-y-auto px-3 pb-4">
+      <nav aria-label={labels.main} className="flex-1 overflow-y-auto px-3 pt-2 pb-4">
         <ul className="space-y-0.5">
           {sideItems.map(({ path, key, Icon }) => {
             const active = isActive(path, pathname, false);
@@ -112,8 +121,8 @@ function Side({ locale, labels, pathname }: ViewProps) {
                 <Link
                   href={localePath(locale, path)}
                   aria-current={active ? "page" : undefined}
-                  className={`flex items-center gap-3 rounded-lg border-l-2 px-3 py-2 text-sm font-medium ${
-                    active ? "border-accent bg-surface text-accent" : "border-transparent text-muted hover:text-ink"
+                  className={`flex min-h-9 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    active ? "bg-accent-soft text-accent" : "text-muted hover:bg-surface-2 hover:text-ink"
                   }`}
                 >
                   <Icon width={20} height={20} strokeWidth={active ? 2.2 : 1.8} />
@@ -125,6 +134,7 @@ function Side({ locale, labels, pathname }: ViewProps) {
           })}
         </ul>
       </nav>
+      {footer && <div className="shrink-0 border-t border-line p-3">{footer}</div>}
     </aside>
   );
 }

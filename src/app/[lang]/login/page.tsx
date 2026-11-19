@@ -24,23 +24,21 @@ export default async function LoginPage() {
       </div>
       <div className="absolute inset-0 lg:relative lg:col-start-2 lg:row-start-1">
         <Image src="/login-photo.jpg" alt="" fill priority sizes="(min-width: 1024px) 50vw, 100vw" className="object-cover object-[50%_30%]" />
-        <div className="absolute inset-0 bg-[#23333f]/45 lg:hidden" />
+        <div className="absolute inset-0 bg-[#141a2e]/55 lg:hidden" />
       </div>
       <div className="relative z-10 flex items-center justify-center px-4 pb-8 pt-20 lg:col-start-1 lg:row-start-1 lg:px-6 lg:py-8">
         <div className="flex w-full max-w-sm flex-col rounded-2xl bg-surface p-6 shadow-xl lg:rounded-none lg:bg-transparent lg:p-0 lg:shadow-none">
           <div className="mb-8">
-            <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-accent text-xl font-bold text-accent-ink">
-              D
-            </div>
+            <Image src="/icon.svg" alt="" width={48} height={48} className="mb-4 h-12 w-12" />
             <h1 className="text-2xl font-semibold tracking-tight">{t.meta.appName}</h1>
             <p className="mt-1 text-sm text-muted">{t.login.subtitle}</p>
           </div>
           <ClearPrivateData />
           <LoginForm labels={t.login} errors={t.errors} passwordLabels={t.password} />
-          <Link href={localePath(locale, "/forgot-password")} className="mt-4 text-center text-sm text-accent">
+          <Link href={localePath(locale, "/forgot-password")} className="mt-4 flex min-h-11 items-center justify-center text-center text-sm font-medium text-accent hover:underline">
             {t.forgot.link}
           </Link>
-          <Link href={localePath(locale, "/privacy")} className="mt-6 text-center text-xs text-muted">
+          <Link href={localePath(locale, "/privacy")} className="mt-2 flex min-h-11 items-center justify-center text-center text-xs text-muted hover:text-ink">
             {t.privacy.link}
           </Link>
         </div>
