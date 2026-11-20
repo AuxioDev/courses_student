@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import { Brand } from "@/components/brand";
 import { getI18n } from "@/i18n";
 import { localePath } from "@/i18n/config";
 import { AppNav } from "@/components/app-nav";
@@ -25,7 +26,7 @@ export default async function DiaryLayout({ children }: LayoutProps<"/[lang]">) 
       <header className="sticky top-0 z-10 border-b border-line bg-surface/85 pt-[env(safe-area-inset-top)] backdrop-blur">
         <div className="mx-auto flex h-14 max-w-2xl items-center justify-between px-4 sm:px-6 md:max-w-3xl lg:max-w-5xl lg:justify-end">
           <Link href={localePath(locale, "/")} className="inline-flex min-h-11 items-center text-[0.9375rem] font-semibold tracking-tight lg:hidden">
-            {t.meta.appName}
+            <Brand name={t.meta.appName} />
           </Link>
           <div className="flex items-center gap-2">
             <LanguageMenu locale={locale} label={t.profile.language} saveToAccount />

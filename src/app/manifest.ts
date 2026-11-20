@@ -7,7 +7,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     id: "/",
     name: az.meta.appName,
-    short_name: "Gündəlik",
+    short_name: "SkyEd",
     description: az.meta.description,
     lang: "az",
     start_url: "/",

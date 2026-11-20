@@ -2,7 +2,7 @@ import type { Dictionary } from "./en";
 
 export const ru: Dictionary = {
   meta: {
-    appName: "Дневник ученика",
+    appName: "SkyEd Дневник ученика",
     description: "Ваши уроки, домашние задания, оценки и посещаемость в одном месте.",
   },
   nav: { today: "Сегодня", diary: "Дневник", homework: "Задания", marks: "Оценки", more: "Ещё", main: "Главное меню" },

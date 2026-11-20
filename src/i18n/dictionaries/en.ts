@@ -3,7 +3,7 @@
 
 export const en = {
   meta: {
-    appName: "Student Diary",
+    appName: "SkyEd Student Diary",
     description: "Your lessons, homework, marks and attendance in one place.",
   },
   nav: { today: "Today", diary: "Diary", homework: "Homework", marks: "Marks", more: "More", main: "Main" },

@@ -2,6 +2,8 @@
 
 import { Suspense, type ComponentType, type ReactNode, type SVGProps } from "react";
 import Link from "next/link";
+import { Brand } from "@/components/brand";
+import Image from "next/image";
 import { LinkPending } from "./link-pending";
 import { usePathname } from "next/navigation";
 import { localePath, type Locale } from "@/i18n/config";
@@ -107,10 +109,8 @@ function Side({ locale, labels, pathname, footer }: ViewProps) {
   return (
     <aside className="fixed inset-y-0 left-0 z-20 hidden w-60 flex-col border-r border-line bg-surface lg:flex">
       <Link href={localePath(locale, "/")} className="flex h-14 shrink-0 items-center gap-2.5 px-5 text-[0.9375rem] font-semibold tracking-tight">
-        <span className="grid h-8 w-8 place-items-center rounded-lg bg-accent text-accent-ink">
-          <BookIcon width={18} height={18} />
-        </span>
-        {labels.appName}
+        <Image src="/icon.svg" alt="" width={32} height={32} className="brand-mark h-[32px] w-[32px] shrink-0" />
+        <Brand name={labels.appName} />
       </Link>
       <nav aria-label={labels.main} className="flex-1 overflow-y-auto px-3 pt-2 pb-4">
         <ul className="space-y-0.5">
