@@ -5,6 +5,7 @@ import { getI18n } from "@/i18n";
 import { localePath } from "@/i18n/config";
 import { AppNav } from "@/components/app-nav";
 import { LanguageMenu } from "@/components/language-menu";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { OfflineBanner } from "@/components/pwa/offline-banner";
 import { PageTransition } from "@/components/page-transition";
 import { NotificationBell, NotificationBellPlaceholder } from "@/components/notification-bell";
@@ -29,6 +30,7 @@ export default async function DiaryLayout({ children }: LayoutProps<"/[lang]">) 
             <Brand name={t.meta.appName} />
           </Link>
           <div className="flex items-center gap-2">
+            <ThemeToggle labels={{ theme: t.profile.theme, dark: t.profile.themeDark }} />
             <LanguageMenu locale={locale} label={t.profile.language} saveToAccount />
             <Suspense fallback={<NotificationBellPlaceholder />}>
               <NotificationBell />
